@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<ci:Cryptic xmlns:ci="cryptic.xsd" schemaVersion="1">
+	<Header>
+		<Algorithm></Algorithm>
+		<OperationMode></OperationMode>
+		<InitializationVector></InitializationVector>
+	</Header>
+	<Payload>
+		<Data></Data>
+		<Data></Data>
+	</Payload>
+	<Trailer>
+		<Length></Length>
+		<Checksum></Checksum>
+	</Trailer>
+</ci:Cryptic>

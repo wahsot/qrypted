@@ -1,0 +1,54 @@
+<?xml version="1.0" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="Cryptic">
+		<xs:complexType>
+			<xs:attribute name="schemaVersion" type="xs:positiveInteger" default="1" />
+			<xs:sequence>
+				<xs:element name="Header">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Salt" type="xs:binaryHex" maxLength="64" />
+							<xs:element name="Iterations" type="xs:positiveInteger" />
+							<xs:element name="Digest">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="Sha2-256" />
+										<xs:enumeration value="Sha2-512" />
+										<xs:enumeration value="Sha3-256" />
+										<xs:enumeration value="Sha3-512" />
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="OperationMode">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="ECB" />
+										<xs:enumeration value="OFB" />
+										<xs:enumeration value="CTR" />
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="InitializationVector" type="xs:binaryHex" maxLength="1024" />
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Payload">
+					<xs:complexType>
+						<xs:choice>
+							<xs:element name="Data" type="xs:binaryBase64" maxLength="524288" maxOccurs="unbounded" minOccurs="0" />
+							<xs:element name="HexData" type="xs:binaryHex" maxLength="524288" maxOccurs="unbounded" minOccurs="0" />
+						</xs:choice>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Trailer">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Length" type="xs:unsignedLong" />
+							<xs:element name="Checksum" type="xs:binaryHex" maxLength="1024" minLength="512" />
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
