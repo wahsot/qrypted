@@ -12,6 +12,7 @@
 							<xs:element name="Digest">
 								<xs:simpleType>
 									<xs:restriction base="xs:string">
+										<xs:enumeration value="Sha1" />
 										<xs:enumeration value="Sha2-256" />
 										<xs:enumeration value="Sha2-512" />
 										<xs:enumeration value="Sha3-256" />
@@ -19,12 +20,26 @@
 									</xs:restriction>
 								</xs:simpleType>
 							</xs:element>
-							<xs:element name="OperationMode">
+							<xs:element name="Method">
 								<xs:simpleType>
 									<xs:restriction base="xs:string">
 										<xs:enumeration value="ECB" />
+										<xs:enumeration value="CBC" />
+										<xs:enumeration value="CFB" />
 										<xs:enumeration value="OFB" />
 										<xs:enumeration value="CTR" />
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="Cipher">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="Blowfish" />
+										<xs:enumeration value="Camellia" />
+										<xs:enumeration value="IDEA" />
+										<xs:enumeration value="Rijndael" />
+										<xs:enumeration value="Serpent" />
+										<xs:enumeration value="Twofish" />
 									</xs:restriction>
 								</xs:simpleType>
 							</xs:element>
