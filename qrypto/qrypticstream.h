@@ -13,14 +13,16 @@ class QrypticStream : public QObject
 
 public:
     enum Cipher {
+        IDEA,
         Blowfish,
         Camellia,
-        IDEA,
         Rijndael,
         Serpent,
         Twofish,
         UnknownCipher
     };
+
+    static const QStringList Ciphers;
 
     enum Digest {
         Sha1,
@@ -30,6 +32,8 @@ public:
         Sha3_512,
         UnknownDigest
     };
+
+    static const QStringList Digests;
 
     enum KeyDerivation {
         PKCS5_PBKDF1,
@@ -46,6 +50,8 @@ public:
         Counter,
         UnknownMethod
     };
+
+    static const QStringList Methods;
 
     struct Settings
     {

@@ -3,11 +3,13 @@
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 
+#include <cryptopp/base64.h>
 #include <cryptopp/camellia.h>
 #include <cryptopp/cryptlib.h>
 #include <cryptopp/aes.h>
 #include <cryptopp/blowfish.h>
 #include <cryptopp/filters.h>
+#include <cryptopp/hex.h>
 #include <cryptopp/idea.h>
 #include <cryptopp/modes.h>
 #include <cryptopp/osrng.h>
@@ -47,8 +49,9 @@ struct QrypticStream::Private
 {
     CryptoPP::AutoSeededRandomPool prng;
     CryptoPP::SecByteBlock key;
-    CryptoPP::SecByteBlock salt;
     CryptoPP::SecByteBlock password;
+    CryptoPP::SecByteBlock IV;
+    CryptoPP::SecByteBlock salt;
     QrypticStream::Settings settings;
     QIODevice *device;
 
@@ -81,7 +84,30 @@ struct QrypticStream::Private
                 break;
             }
 
-            if (PBKDF.isNull()) return false;
+            switch (settings.cipher) {
+            case QrypticStream::IDEA:
+                key.resize(CryptoPP::IDEA::DEFAULT_KEYLENGTH);
+                break;
+            case QrypticStream::Blowfish:
+                key.resize(CryptoPP::Blowfish::DEFAULT_KEYLENGTH);
+                break;
+            case QrypticStream::Camellia:
+                key.resize(CryptoPP::Camellia::DEFAULT_KEYLENGTH);
+                break;
+            case QrypticStream::Rijndael:
+                key.resize(CryptoPP::Rijndael::DEFAULT_KEYLENGTH);
+                break;
+            case QrypticStream::Serpent:
+                key.resize(CryptoPP::Serpent::DEFAULT_KEYLENGTH);
+                break;
+            case QrypticStream::Twofish:
+                key.resize(CryptoPP::Twofish::DEFAULT_KEYLENGTH);
+                break;
+            default:
+                break;
+            }
+
+            if (PBKDF.isNull() || key.empty()) return false;
 
             if (salt.empty()) {
                 salt.resize(settings.saltLength);
@@ -89,7 +115,6 @@ struct QrypticStream::Private
             }
 
             Q_ASSERT(settings.iterations > 0);
-            key.resize(PBKDF->MaxDerivedKeyLength());
             PBKDF->DeriveKey(key.data(), key.size(), 0,
                              password.data(), password.size(),
                              salt.data(), salt.size(), settings.iterations);
@@ -132,38 +157,49 @@ struct Cipher_Class
 
     CryptoPP::StreamTransformation *encrypt()
     {
-        CryptoPP::SecByteBlock iv;
-
+        //CryptoPP::CBC_Mode<CryptoPP::IDEA>::Encryption e;
+        //e.SetCipherWithIV();
         switch (d->settings.cipher) {
         case QrypticStream::IDEA:
-            iv.resize(CryptoPP::IDEA::IV_LENGTH);
-            d->prng.GenerateBlock(iv.data(), iv.size());
-            return new typename Method<CryptoPP::IDEA>::Encryption(d->key.data(), d->key.size(), iv.data());
+            d->IV.resize(CryptoPP::IDEA::IV_REQUIREMENT);
+            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
+            return new typename Method<CryptoPP::IDEA>::Encryption(d->key.data(), d->key.size(), d->IV.data());
         case QrypticStream::Blowfish:
-            iv.resize(CryptoPP::Blowfish::IV_LENGTH);
-            d->prng.GenerateBlock(iv.data(), iv.size());
-            return new typename Method<CryptoPP::Blowfish>::Encryption(d->key.data(), d->key.size(), iv.data());
+            d->IV.resize(CryptoPP::Blowfish::IV_REQUIREMENT);
+            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
+            return new typename Method<CryptoPP::Blowfish>::Encryption(d->key.data(), d->key.size(), d->IV.data());
         case QrypticStream::Camellia:
-            iv.resize(CryptoPP::Camellia::IV_LENGTH);
-            d->prng.GenerateBlock(iv.data(), iv.size());
-            return new typename Method<CryptoPP::Camellia>::Encryption(d->key.data(), d->key.size(), iv.data());
+            d->IV.resize(CryptoPP::Camellia::IV_REQUIREMENT);
+            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
+            return new typename Method<CryptoPP::Camellia>::Encryption(d->key.data(), d->key.size(), d->IV.data());
         case QrypticStream::Rijndael:
-            iv.resize(CryptoPP::Rijndael::IV_LENGTH);
-            d->prng.GenerateBlock(iv.data(), iv.size());
-            return new typename Method<CryptoPP::Rijndael>::Encryption(d->key.data(), d->key.size(), iv.data());
+            d->IV.resize(CryptoPP::Rijndael::IV_REQUIREMENT);
+            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
+            return new typename Method<CryptoPP::Rijndael>::Encryption(d->key.data(), d->key.size(), d->IV.data());
         case QrypticStream::Serpent:
-            iv.resize(CryptoPP::Serpent::IV_LENGTH);
-            d->prng.GenerateBlock(iv.data(), iv.size());
-            return new typename Method<CryptoPP::Serpent>::Encryption(d->key.data(), d->key.size(), iv.data());
+            d->IV.resize(CryptoPP::Serpent::IV_REQUIREMENT);
+            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
+            return new typename Method<CryptoPP::Serpent>::Encryption(d->key.data(), d->key.size(), d->IV.data());
         case QrypticStream::Twofish:
-            iv.resize(CryptoPP::Twofish::IV_LENGTH);
-            d->prng.GenerateBlock(iv.data(), iv.size());
-            return new typename Method<CryptoPP::Twofish>::Encryption(d->key.data(), d->key.size(), iv.data());
+            d->IV.resize(CryptoPP::Twofish::IV_REQUIREMENT);
+            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
+            return new typename Method<CryptoPP::Twofish>::Encryption(d->key.data(), d->key.size(), d->IV.data());
         default:
             return 0;
         }
     }
 };
+
+const QStringList QrypticStream::Ciphers = QStringList() << "IDEA" << "Blowfish" << "Camellia" <<
+                                                            "Rijndael" << "Serpent" << "Twofish" <<
+                                                            QString();
+
+const QStringList QrypticStream::Digests = QStringList() << "Sha1" << "Sha2-256" << "Sha2-512" <<
+                                                            "Sha3-256" << "Sha3-512" <<
+                                                            QString();
+
+const QStringList QrypticStream::Methods = QStringList() << "ECB" << "CBC" << "CFB" << "OFB" << "CTR" <<
+                                                            QString();
 
 QrypticStream::QrypticStream(QIODevice *device) :
     QObject(device),
@@ -210,16 +246,42 @@ bool QrypticStream::encrypt(const QByteArray &src)
 
         if (cipher.isNull()) return false;
 
-        CryptoPP::StringSource(src.toStdString(), true,
-                               new CryptoPP::StreamTransformationFilter(*cipher,
-                                                                        new CryptoPP::StringSink(sink)));
+        using namespace CryptoPP;
+
+        StringSource(src.toStdString(), true,
+                     new StreamTransformationFilter(*cipher,
+                                                    new Base64Encoder(new StringSink(sink))));
 
         if (d->device->isWritable() || d->device->open(QIODevice::WriteOnly)) {
             QXmlStreamWriter stream(d->device);
+            stream.setAutoFormatting(true);
             stream.setAutoFormattingIndent(-1);
             stream.writeStartDocument();
+            stream.writeStartElement("cryptic.xsd", "Cryptic");
+            stream.writeStartElement("Header");
+            stream.writeTextElement("Salt",
+                                    QByteArray::fromRawData(reinterpret_cast<char*>(d->salt.data()),
+                                                            d->salt.size()).toHex());
+            stream.writeTextElement("Iterations", QString::number(d->settings.iterations));
+            stream.writeTextElement("Digest", Digests.at(d->settings.digest));
+            stream.writeTextElement("OperationMode", Methods.at(d->settings.method));
+            stream.writeTextElement("Cipher", Ciphers.at(d->settings.cipher));
+            stream.writeTextElement("InitializationVector",
+                                    QByteArray::fromRawData(reinterpret_cast<char*>(d->IV.data()),
+                                                            d->IV.size()).toHex());
+            stream.writeEndElement();
+            stream.writeStartElement("Payload");
+            stream.writeTextElement("Data", QString::fromStdString(sink));
+            stream.writeEndElement();
+            stream.writeStartElement("Trailer");
+            stream.writeTextElement("Length", QString::number(src.size()));
+            stream.writeEndDocument();
+
+            return true;
         }
     }
+
+    return false;
 }
 
 void QrypticStream::setDevice(QIODevice *device)
