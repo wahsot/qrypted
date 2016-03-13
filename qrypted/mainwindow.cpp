@@ -1,6 +1,9 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include "../qrypto/qrypticstream.h"
+
+#include <QBuffer>
 #include <QClipboard>
 #include <QColorDialog>
 #include <QFile>
@@ -27,13 +30,28 @@ MainWindow::MainWindow(QWidget *parent) :
     for (int i = 16; i < 33; i += 2)
         ui->sizeComboBox->addItem(l.toString(i), i);
 
+    for (int i = 0, l = QrypticStream::Ciphers.size() - 1; i < l; ++i)
+        ui->cipherComboBox->addItem(QrypticStream::Ciphers.at(i), i);
+
+    for (int i = 0, l = QrypticStream::Digests.size() - 1; i < l; ++i)
+        ui->digestComboBox->addItem(QrypticStream::Digests.at(i), i);
+
+    for (int i = 0, l = QrypticStream::Methods.size() - 1; i < l; ++i)
+        ui->methodComboBox->addItem(QrypticStream::Methods.at(i), i);
+
     setWindowTitle(qApp->applicationName());
     ui->actionAbout->setText(ui->actionAbout->text().arg(qApp->applicationName()));
     ui->sizeComboBox->setCurrentIndex(6);
     ui->formatToolBar->insertWidget(ui->actionBold, ui->fontComboBox);
     ui->formatToolBar->insertWidget(ui->actionBold, ui->sizeComboBox);
     ui->formatToolBar->insertSeparator(ui->actionBold);
+    ui->cipherComboBox->setCurrentIndex(3);
+    ui->digestComboBox->setCurrentIndex(1);
+    ui->methodComboBox->setCurrentIndex(1);
     ui->mainToolBar->addWidget(ui->passwordLineEdit);
+    ui->mainToolBar->addWidget(ui->cipherComboBox);
+    ui->mainToolBar->addWidget(ui->digestComboBox);
+    ui->mainToolBar->addWidget(ui->methodComboBox);
     ui->searchToolBar->insertWidget(ui->actionFind_Previous, ui->findLineEdit);
     ui->searchToolBar->insertSeparator(ui->actionFind_Previous);
     ui->searchToolBar->hide();
@@ -289,6 +307,15 @@ void MainWindow::on_actionRead_Only_Mode_triggered(bool checked)
 
 void MainWindow::on_actionSave_As_triggered()
 {
+    if (ui->passwordLineEdit->text().isEmpty()) {
+        if (QMessageBox::question(this, trUtf8("Encryption Settings — %1").arg(qApp->applicationName()),
+                                  tr("Enable encryption? You will need to set the password."),
+                                  QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes) {
+            ui->passwordLineEdit->setFocus();
+            return;
+        }
+    }
+
     const QString fileName = QFileDialog::getSaveFileName(this, trUtf8("Save File — %1").arg(qApp->applicationName()));
 
     if (!fileName.isEmpty()) {
@@ -304,8 +331,19 @@ void MainWindow::on_actionSave_triggered()
     if (fileName.isEmpty())
         on_actionSave_As_triggered();
     else {
-        const QByteArray data = ui->textEdit->toHtml().toUtf8();
+        QByteArray data = ui->textEdit->toHtml().toUtf8();
         QSaveFile f(fileName);
+
+        if (!ui->passwordLineEdit->text().isEmpty()) {
+            QBuffer buffer;
+            QrypticStream stream(&buffer);
+            stream.setSettings(QrypticStream::Settings(QrypticStream::Cipher(ui->cipherComboBox->currentData().toInt()),
+                                                       QrypticStream::Method(ui->methodComboBox->currentData().toInt()),
+                                                       QrypticStream::Digest(ui->digestComboBox->currentData().toInt())));
+
+            if (stream.encrypt(data))
+                buffer.buffer().swap(data);
+        }
 
         for (int retry = QMessageBox::Retry; retry == QMessageBox::Retry; ) {
             if (f.open(QFile::WriteOnly) && f.write(data) == data.size() && f.commit()) {

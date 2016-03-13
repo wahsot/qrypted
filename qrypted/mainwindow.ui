@@ -11,7 +11,8 @@
    </rect>
   </property>
   <property name="windowIcon">
-   <iconset theme="accessories-text-editor"/>
+   <iconset theme="accessories-text-editor">
+    <normaloff>.</normaloff>.</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -39,6 +40,15 @@
        <bool>true</bool>
       </property>
      </widget>
+    </item>
+    <item>
+     <widget class="QComboBox" name="cipherComboBox"/>
+    </item>
+    <item>
+     <widget class="QComboBox" name="digestComboBox"/>
+    </item>
+    <item>
+     <widget class="QComboBox" name="methodComboBox"/>
     </item>
     <item>
      <widget class="QLineEdit" name="findLineEdit">
@@ -480,10 +490,11 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset theme="go-next"/>
+    <iconset theme="go-next">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>Find Next</string>
+    <string>Find &amp;Next</string>
    </property>
    <property name="shortcut">
     <string>F3</string>
@@ -494,10 +505,11 @@
     <bool>false</bool>
    </property>
    <property name="icon">
-    <iconset theme="go-previous"/>
+    <iconset theme="go-previous">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>Find Previous</string>
+    <string>F&amp;ind Previous</string>
    </property>
    <property name="shortcut">
     <string>Shift+F3</string>
@@ -543,7 +555,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset theme="format-justify-left"/>
+    <iconset theme="format-justify-left">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Align &amp;Left</string>
@@ -554,7 +567,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset theme="format-justify-center"/>
+    <iconset theme="format-justify-center">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Align &amp;Center</string>
@@ -565,7 +579,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset theme="format-justify-right"/>
+    <iconset theme="format-justify-right">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Align &amp;Right</string>
@@ -576,10 +591,11 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset theme="format-text-strikethrough"/>
+    <iconset theme="format-text-strikethrough">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>Censor</string>
+    <string>C&amp;ensor</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+E</string>
