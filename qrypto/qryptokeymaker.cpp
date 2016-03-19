@@ -1,7 +1,5 @@
 #include "qryptokeymaker.h"
 
-#include <QStringList>
-
 #include <cryptopp/cryptlib.h>
 #include <cryptopp/osrng.h>
 #include <cryptopp/pwdbased.h>
@@ -15,8 +13,6 @@ namespace QryptoPP
 
 struct KeyMaker::Private
 {
-    static QStringList Algorithms;
-
     KeyMaker::Algorithm algorithm;
     QByteArray salt;
     uint iteration;
@@ -32,24 +28,31 @@ struct KeyMaker::Private
         typename CryptoPP::PKCS5_PBKDF2_HMAC<Alg> PBKDF;
         dkLen = std::min(PBKDF.MaxDerivedKeyLength(), dkLen);
 
-        if (salt.isEmpty()) {
-            CryptoPP::AutoSeededRandomPool prng;
-            salt.resize(Alg::DIGESTSIZE);
-            prng.GenerateBlock(reinterpret_cast<byte*>(salt.data()), salt.size());
+        try {
+            if (salt.isEmpty()) {
+                CryptoPP::AutoSeededRandomPool prng;
+                salt.resize(Alg::DIGESTSIZE);
+                prng.GenerateBlock(reinterpret_cast<byte*>(salt.data()), salt.size());
+            }
+
+            PBKDF.DeriveKey(reinterpret_cast<byte*>(data), dkLen, 0,
+                            reinterpret_cast<const byte*>(pwd.constData()), pwd.size(),
+                            reinterpret_cast<const byte*>(salt.constData()), salt.size(),
+                            iteration);
+            return dkLen;
+        } catch (...) {
+            return 0;
         }
-
-        PBKDF.DeriveKey(reinterpret_cast<byte*>(data), dkLen, 0,
-                        reinterpret_cast<const byte*>(pwd.constData()), pwd.size(),
-                        reinterpret_cast<const byte*>(salt.constData()), salt.size(),
-                        iteration);
-
-        return dkLen;
     }
 };
 
-QStringList KeyMaker::Private::Algorithms =
+}
+
+using namespace QryptoPP;
+
+const QStringList KeyMaker::AlgorithmNames =
         QStringList() << CryptoPP::RIPEMD160::StaticAlgorithmName() <<
-                         CryptoPP::RIPEMD160::StaticAlgorithmName() <<
+                         CryptoPP::RIPEMD320::StaticAlgorithmName() <<
                          CryptoPP::SHA1::StaticAlgorithmName() <<
                          CryptoPP::SHA224::StaticAlgorithmName() <<
                          CryptoPP::SHA256::StaticAlgorithmName() <<
@@ -62,27 +65,29 @@ QStringList KeyMaker::Private::Algorithms =
                          CryptoPP::Whirlpool::StaticAlgorithmName() <<
                          QString();
 
-}
-using namespace QryptoPP;
-
 KeyMaker::KeyMaker(Algorithm algorithm, uint iterationCount) :
     d(new Private(algorithm, iterationCount))
+{ }
+
+KeyMaker::KeyMaker(const KeyMaker &keyMaker) :
+    d(new Private(*keyMaker.d))
 { }
 
 KeyMaker::KeyMaker(const QString &algorithmName, uint iterationCount) :
     d(new Private(UnknownAlgorithm, iterationCount))
 {
-    for (int i = d->algorithm; i-- > 0; ) {
-        if (Private::Algorithms.at(i).compare(algorithmName, Qt::CaseInsensitive) == 0) {
-            d->algorithm = Algorithm(i);
-            break;
-        }
-    }
+    setAlgorithmName(algorithmName);
 }
 
 KeyMaker::~KeyMaker()
 {
     delete d;
+}
+
+KeyMaker &KeyMaker::operator=(const KeyMaker &keyMaker)
+{
+    *d = *keyMaker.d;
+    return *this;
 }
 
 KeyMaker::Algorithm KeyMaker::algorithm() const
@@ -92,7 +97,7 @@ KeyMaker::Algorithm KeyMaker::algorithm() const
 
 QString KeyMaker::algorithmName() const
 {
-    return Private::Algorithms.at(d->algorithm);
+    return AlgorithmNames.at(d->algorithm);
 }
 
 uint KeyMaker::deriveKey(void *keyData, uint desiredKeyLength, const QByteArray &password)
@@ -140,6 +145,18 @@ QByteArray KeyMaker::salt() const
 void KeyMaker::setAlgorithm(Algorithm algorithm)
 {
     d->algorithm = algorithm;
+}
+
+void KeyMaker::setAlgorithmName(const QString &algorithmName)
+{
+    for (int i = UnknownAlgorithm; i-- > 0; ) {
+        if (AlgorithmNames.at(i).compare(algorithmName, Qt::CaseInsensitive) == 0) {
+            d->algorithm = Algorithm(i);
+            return;
+        }
+    }
+
+    d->algorithm = UnknownAlgorithm;
 }
 
 void KeyMaker::setIterationCount(uint iterationCount)

@@ -1,101 +1,75 @@
 #include "qryptocipher.h"
 
+#include "qryptokeymaker.h"
+
 #include <QVariant>
 
 #include <cryptopp/camellia.h>
 #include <cryptopp/cryptlib.h>
 #include <cryptopp/aes.h>
 #include <cryptopp/blowfish.h>
+#include <cryptopp/des.h>
 #include <cryptopp/filters.h>
 #include <cryptopp/idea.h>
 #include <cryptopp/modes.h>
 #include <cryptopp/osrng.h>
-#include <cryptopp/pwdbased.h>
 #include <cryptopp/rijndael.h>
 #include <cryptopp/secblock.h>
 #include <cryptopp/seed.h>
 #include <cryptopp/serpent.h>
-#include <cryptopp/sha.h>
 #include <cryptopp/twofish.h>
 
 namespace QryptoPP
 {
 
-template <typename Alg>
-struct Cipher::Action
+struct Cipher::Private
 {
-    Cipher *d;
-    CryptoPP::AutoSeededRandomPool prng;
-    CryptoPP::SecByteBlock key;
+    KeyMaker keyMaker;
+    Cipher::Algorithm algorithm;
+    Cipher::Operation operation;
+    uint keyLength;
+    QByteArray initVector;
 
-    Action(Cipher *d, const QByteArray &password) :
-        d(d),
-        key(Alg::StaticGetValidKeyLength(d->m_keyLength))
-    {
-        const QByteArray Zero(d->m_salt.size(), 0);
-        byte *saltData = reinterpret_cast<byte*>(d->m_salt.data());
-        CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA1> PBKDF;
-        d->m_keyLength = key.size();
+    Private(Cipher::Algorithm algorithm, Cipher::Operation operation, uint keyLength) :
+        algorithm(algorithm),
+        operation(operation),
+        keyLength(keyLength)
+    { }
 
-        if (std::memcmp(Zero.data(), saltData, d->m_salt.size()) == 0)
-            prng.GenerateBlock(saltData, d->m_salt.size());
-
-        PBKDF.DeriveKey(key.data(), key.size(), 0,
-                        reinterpret_cast<const byte*>(password.constData()), password.size(),
-                        saltData, d->m_salt.size(), d->m_iteration);
-    }
-
-    ~Action() { }
-
-    CryptoPP::StreamTransformation *getDecryption() const
-    {
-        const byte *IVData = reinterpret_cast<const byte*>(d->m_IV.constData());
-
-        switch (d->m_operation) {
-        case Cipher::CBC:
-            return new typename CryptoPP::CBC_Mode<Alg>::Decryption(key.data(), key.size(), IVData, d->m_IV.size());
-        case Cipher::CFB:
-            return new typename CryptoPP::CFB_Mode<Alg>::Decryption(key.data(), key.size(), IVData, d->m_IV.size());
-        case Cipher::CTR:
-            return new typename CryptoPP::CTR_Mode<Alg>::Decryption(key.data(), key.size(), IVData, d->m_IV.size());
-        case Cipher::ECB:
-            return new typename CryptoPP::ECB_Mode<Alg>::Decryption(key.data(), key.size(), IVData, d->m_IV.size());
-        case Cipher::OFB:
-            return new typename CryptoPP::OFB_Mode<Alg>::Decryption(key.data(), key.size(), IVData, d->m_IV.size());
-        default:
-            return 0;
-        }
-    }
-
-    CryptoPP::StreamTransformation *getEncryption() const
-    {
-        const byte *IVData = reinterpret_cast<const byte*>(d->m_IV.constData());
-
-        switch (d->m_operation) {
-        case Cipher::CBC:
-            return new typename CryptoPP::CBC_Mode<Alg>::Encryption(key.data(), key.size(), IVData, d->m_IV.size());
-        case Cipher::CFB:
-            return new typename CryptoPP::CFB_Mode<Alg>::Encryption(key.data(), key.size(), IVData, d->m_IV.size());
-        case Cipher::CTR:
-            return new typename CryptoPP::CTR_Mode<Alg>::Encryption(key.data(), key.size(), IVData, d->m_IV.size());
-        case Cipher::ECB:
-            return new typename CryptoPP::ECB_Mode<Alg>::Encryption(key.data(), key.size(), IVData, d->m_IV.size());
-        case Cipher::OFB:
-            return new typename CryptoPP::OFB_Mode<Alg>::Encryption(key.data(), key.size(), IVData, d->m_IV.size());
-        default:
-            return 0;
-        }
-    }
-
-    bool decrypt(QByteArray &dst, const QByteArray &src)
+    template <class Alg>
+    bool decrypt(QByteArray &dst, const QByteArray &src, const QByteArray &pwd)
     {
         using namespace CryptoPP;
-        QScopedPointer<StreamTransformation> cipher(getDecryption());
-        std::string sink;
+        SecByteBlock key(Alg::StaticGetValidKeyLength(keyLength));
+        QScopedPointer<StreamTransformation> cipher;
+
+        if (keyMaker.deriveKey(key.data(), key.size(), pwd) && !initVector.isNull()) {
+            const byte *IVData = reinterpret_cast<const byte*>(initVector.constData());
+            switch (operation) {
+            case Cipher::CipherBlockChaining:
+                cipher.reset(new typename CBC_Mode<Alg>::Decryption(key.data(), key.size(), IVData, initVector.size()));
+                break;
+            case Cipher::CipherFeedback:
+                cipher.reset(new typename CFB_Mode<Alg>::Decryption(key.data(), key.size(), IVData, initVector.size()));
+                break;
+            case Cipher::Counter:
+                cipher.reset(new typename CTR_Mode<Alg>::Decryption(key.data(), key.size(), IVData, initVector.size()));
+                break;
+            case Cipher::ElectronicCodebook:
+                cipher.reset(new typename ECB_Mode<Alg>::Decryption(key.data(), key.size(), IVData, initVector.size()));
+                break;
+            case Cipher::OutputFeedback:
+                cipher.reset(new typename OFB_Mode<Alg>::Decryption(key.data(), key.size(), IVData, initVector.size()));
+                break;
+            default:
+                break;
+            }
+        }
 
         if (cipher.isNull()) return false;
 
         try {
+            std::string sink;
             StringSource(src.toStdString(), true,
                          new StreamTransformationFilter(*cipher, new StringSink(sink)));
             dst.resize(sink.size());
@@ -107,18 +81,44 @@ struct Cipher::Action
         return true;
     }
 
-    bool encrypt(QByteArray &dst, const QByteArray &src)
+    template <class Alg>
+    bool encrypt(QByteArray &dst, const QByteArray &src, const QByteArray &pwd)
     {
         using namespace CryptoPP;
+        SecByteBlock key(Alg::StaticGetValidKeyLength(16));
         QScopedPointer<StreamTransformation> cipher;
-        std::string sink;
-        d->m_IV.resize(Alg::BLOCKSIZE);
-        prng.GenerateBlock(reinterpret_cast<byte*>(d->m_IV.data()), d->m_IV.size());
-        cipher.reset(getEncryption());
+        CryptoPP::AutoSeededRandomPool prng;
+        keyMaker.setSalt(QByteArray()); // will trigger KeyMaker to generate new salt
+        initVector.resize(Alg::BLOCKSIZE);
+        prng.GenerateBlock(reinterpret_cast<byte*>(initVector.data()), initVector.size());
+
+        if (keyMaker.deriveKey(key.data(), key.size(), pwd) && !initVector.isNull()) {
+            const byte *IVData = reinterpret_cast<const byte*>(initVector.constData());
+            switch (operation) {
+            case Cipher::CipherBlockChaining:
+                cipher.reset(new typename CBC_Mode<Alg>::Encryption(key.data(), key.size(), IVData, initVector.size()));
+                break;
+            case Cipher::CipherFeedback:
+                cipher.reset(new typename CFB_Mode<Alg>::Encryption(key.data(), key.size(), IVData, initVector.size()));
+                break;
+            case Cipher::Counter:
+                cipher.reset(new typename CTR_Mode<Alg>::Encryption(key.data(), key.size(), IVData, initVector.size()));
+                break;
+            case Cipher::ElectronicCodebook:
+                cipher.reset(new typename ECB_Mode<Alg>::Encryption(key.data(), key.size(), IVData, initVector.size()));
+                break;
+            case Cipher::OutputFeedback:
+                cipher.reset(new typename OFB_Mode<Alg>::Encryption(key.data(), key.size(), IVData, initVector.size()));
+                break;
+            default:
+                break;
+            }
+        }
 
         if (cipher.isNull()) return false;
 
         try {
+            std::string sink;
             StringSource(src.toStdString(), true,
                          new StreamTransformationFilter(*cipher, new StringSink(sink)));
             dst.resize(sink.size());
@@ -135,71 +135,173 @@ struct Cipher::Action
 
 using namespace QryptoPP;
 
-bool Cipher::canDecrypt() const
+const QStringList Cipher::AlgorithmNames =
+        QStringList() << CryptoPP::AES::StaticAlgorithmName() <<
+                         CryptoPP::Blowfish::StaticAlgorithmName() <<
+                         CryptoPP::Camellia::StaticAlgorithmName() <<
+                         CryptoPP::DES_EDE3::StaticAlgorithmName() <<
+                         CryptoPP::IDEA::StaticAlgorithmName() <<
+                         CryptoPP::SEED::StaticAlgorithmName() <<
+                         CryptoPP::Serpent::StaticAlgorithmName() <<
+                         CryptoPP::Twofish::StaticAlgorithmName() <<
+                         QString();
+
+const QStringList Cipher::OperationCodes =
+        QStringList() << "CBC" << "CFB" << "CTR" << "ECB" << "OFB" << QString();
+
+Cipher::Cipher(Algorithm algorithm, Operation operation, uint keyLength) :
+    d(new Private(algorithm, operation, keyLength))
+{ }
+
+Cipher::Cipher(const Cipher &cipher) :
+    d(new Private(*cipher.d))
+{ }
+
+Cipher::Cipher(const QString &algorithmName, const QString &operationCode, uint keyLength) :
+    d(new Private(UnknownAlgorithm, UnknownOperation, keyLength))
 {
-    if (canEncrypt()) {
-        const QByteArray Zero(std::max(m_salt.size(), m_IV.size()), 0);
-        return std::memcmp(Zero.constData(), m_salt.constData(), m_salt.size()) &&
-                std::memcmp(Zero.constData(), m_IV.constData(), m_IV.size());
-    } else {
-        return false;
-    }
+    setAlgorithmName(algorithmName);
+    setOperationCode(operationCode);
 }
 
-bool Cipher::canEncrypt() const
+Cipher::~Cipher()
 {
-    return m_iteration && m_salt.size() > 7 && m_IV.size() > 7 &&
-            m_algorithm < UnknownAlgorithm && m_operation < UnknownOperation;
+    delete d;
 }
 
-bool Cipher::decrypt(QByteArray &dst, const QByteArray &password, const QByteArray &src)
+Cipher &Cipher::operator=(const Cipher &cipher)
 {
-    if (canDecrypt()) {
-        switch (m_algorithm) {
-        case AES:
-            return Action<CryptoPP::AES>(this, password).decrypt(dst, src);
-        case Blowfish:
-            return Action<CryptoPP::Blowfish>(this, password).decrypt(dst, src);
-        case Camellia:
-            return Action<CryptoPP::Camellia>(this, password).decrypt(dst, src);
-        case IDEA:
-            return Action<CryptoPP::IDEA>(this, password).decrypt(dst, src);
-        case SEED:
-            return Action<CryptoPP::SEED>(this, password).decrypt(dst, src);
-        case Serpent:
-            return Action<CryptoPP::Serpent>(this, password).decrypt(dst, src);
-        case Twofish:
-            return Action<CryptoPP::Twofish>(this, password).decrypt(dst, src);
-        default:
-            break;
-        }
+    *d = *cipher.d;
+    return *this;
+}
+
+Cipher::Algorithm Cipher::algorithm() const
+{
+    return d->algorithm;
+}
+
+QString Cipher::algorithmName() const
+{
+    return AlgorithmNames.at(d->algorithm);
+}
+
+bool Cipher::decrypt(QByteArray &plain, const QByteArray &crypt, const QByteArray &password)
+{
+    switch (d->algorithm) {
+    case AES:
+        return d->decrypt<CryptoPP::AES>(plain, crypt, password);
+    case Blowfish:
+        return d->decrypt<CryptoPP::Blowfish>(plain, crypt, password);
+    case Camellia:
+        return d->decrypt<CryptoPP::Camellia>(plain, crypt, password);
+    case DES_EDE3:
+        return d->decrypt<CryptoPP::DES_EDE3>(plain, crypt, password);
+    case IDEA:
+        return d->decrypt<CryptoPP::IDEA>(plain, crypt, password);
+    case SEED:
+        return d->decrypt<CryptoPP::SEED>(plain, crypt, password);
+    case Serpent:
+        return d->decrypt<CryptoPP::Serpent>(plain, crypt, password);
+    case Twofish:
+        return d->decrypt<CryptoPP::Twofish>(plain, crypt, password);
+    default:
+        break;
     }
 
     return false;
 }
 
-bool Cipher::encrypt(QByteArray &dst, const QByteArray &password, const QByteArray &src)
+bool Cipher::encrypt(QByteArray &crypt, const QByteArray &plain, const QByteArray &password)
 {
-    if (canEncrypt()) {
-        switch (m_algorithm) {
-        case AES:
-            return Action<CryptoPP::AES>(this, password).encrypt(dst, src);
-        case Blowfish:
-            return Action<CryptoPP::Blowfish>(this, password).encrypt(dst, src);
-        case Camellia:
-            return Action<CryptoPP::Camellia>(this, password).encrypt(dst, src);
-        case IDEA:
-            return Action<CryptoPP::IDEA>(this, password).encrypt(dst, src);
-        case SEED:
-            return Action<CryptoPP::SEED>(this, password).encrypt(dst, src);
-        case Serpent:
-            return Action<CryptoPP::Serpent>(this, password).encrypt(dst, src);
-        case Twofish:
-            return Action<CryptoPP::Twofish>(this, password).encrypt(dst, src);
-        default:
-            break;
-        }
+    switch (d->algorithm) {
+    case AES:
+        return d->encrypt<CryptoPP::AES>(crypt, plain, password);
+    case Blowfish:
+        return d->encrypt<CryptoPP::Blowfish>(crypt, plain, password);
+    case Camellia:
+        return d->encrypt<CryptoPP::Camellia>(crypt, plain, password);
+    case DES_EDE3:
+        return d->encrypt<CryptoPP::DES_EDE3>(crypt, plain, password);
+    case IDEA:
+        return d->encrypt<CryptoPP::IDEA>(crypt, plain, password);
+    case SEED:
+        return d->encrypt<CryptoPP::SEED>(crypt, plain, password);
+    case Serpent:
+        return d->encrypt<CryptoPP::Serpent>(crypt, plain, password);
+    case Twofish:
+        return d->encrypt<CryptoPP::Twofish>(crypt, plain, password);
+    default:
+        break;
     }
 
     return false;
+}
+
+QByteArray Cipher::initVector() const
+{
+    return d->initVector;
+}
+
+uint Cipher::keyLength() const
+{
+    return d->keyLength;
+}
+
+void Cipher::setKeyLength(uint keyLength)
+{
+    d->keyLength = keyLength;
+}
+
+KeyMaker &Cipher::keyMaker()
+{
+    return d->keyMaker;
+}
+
+Cipher::Operation Cipher::operation() const
+{
+    return d->operation;
+}
+
+QString Cipher::operationCode() const
+{
+    return OperationCodes.at(d->operation);
+}
+
+void Cipher::setAlgorithm(Algorithm algorithm)
+{
+    d->algorithm = algorithm;
+}
+
+void Cipher::setAlgorithmName(const QString &algorithmName)
+{
+    for (int i = UnknownAlgorithm; i-- > 0; ) {
+        if (AlgorithmNames.at(i).compare(algorithmName, Qt::CaseInsensitive) == 0) {
+            d->algorithm = Algorithm(i);
+            return;
+        }
+    }
+
+    d->algorithm = UnknownAlgorithm;
+}
+
+void Cipher::setInitVector(const QByteArray &initVector)
+{
+    d->initVector = initVector;
+}
+
+void Cipher::setOperation(Operation operation)
+{
+    d->operation = operation;
+}
+
+void Cipher::setOperationCode(const QString &operationCode)
+{
+    for (int i = UnknownOperation; i-- > 0; ) {
+        if (OperationCodes.at(i).compare(operationCode, Qt::CaseInsensitive) == 0) {
+            d->operation = Operation(i);
+            return;
+        }
+    }
+
+    d->operation = UnknownOperation;
 }

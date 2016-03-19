@@ -1,318 +1,207 @@
 #include "qrypticstream.h"
 
+#include <QVariant>
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 
-#include <cryptopp/base64.h>
-#include <cryptopp/camellia.h>
-#include <cryptopp/cryptlib.h>
-#include <cryptopp/aes.h>
-#include <cryptopp/blowfish.h>
-#include <cryptopp/filters.h>
-#include <cryptopp/hex.h>
-#include <cryptopp/idea.h>
-#include <cryptopp/modes.h>
-#include <cryptopp/osrng.h>
-#include <cryptopp/pwdbased.h>
-#include <cryptopp/rijndael.h>
-#include <cryptopp/secblock.h>
-#include <cryptopp/serpent.h>
-#include <cryptopp/sha.h>
-#include <cryptopp/sha3.h>
-#include <cryptopp/twofish.h>
+#include "qryptocipher.h"
+#include "qryptokeymaker.h"
 
-/* Welcome to C++ where we fight templates with more templates */
-
-template <template <typename T> class KeyDerivation>
-struct PBKDF_Class
+struct QryptIO::Private
 {
-    CryptoPP::PasswordBasedKeyDerivationFunction *operator()(QrypticStream::Digest digest)
-    {
-        switch (digest) {
-        case QrypticStream::Sha1:
-            return new KeyDerivation<CryptoPP::SHA1>;
-        case QrypticStream::Sha256:
-            return new KeyDerivation<CryptoPP::SHA256>;
-        case QrypticStream::Sha512:
-            return new KeyDerivation<CryptoPP::SHA512>;
-        case QrypticStream::Sha3_256:
-            return new KeyDerivation<CryptoPP::SHA3_256>;
-        case QrypticStream::Sha3_512:
-            return new KeyDerivation<CryptoPP::SHA3_512>;
-        default:
-            return 0;
-        }
-    }
-};
-
-struct QrypticStream::Private
-{
-    CryptoPP::AutoSeededRandomPool prng;
-    CryptoPP::SecByteBlock key;
-    CryptoPP::SecByteBlock password;
-    CryptoPP::SecByteBlock IV;
-    CryptoPP::SecByteBlock salt;
-    QrypticStream::Settings settings;
+    QryptoPP::Cipher cipher;
     QIODevice *device;
+    int crypticVersion;
 
     Private(QIODevice *device) :
-        device(device)
+        device(device),
+        crypticVersion(-1)
     { }
 
-    ~Private()
+    bool isReadable()
     {
+        return device && (device->isReadable() || device->open(QIODevice::ReadOnly)) && !device->atEnd();
     }
 
-    bool createKey()
+    bool isWritable()
     {
-        if (key.empty()) {
-            QScopedPointer<CryptoPP::PasswordBasedKeyDerivationFunction> PBKDF;
+        return device && (device->isWritable() || device->open(QIODevice::WriteOnly));
+    }
 
-            switch (settings.keyDerivation) {
-            case QrypticStream::PKCS5_PBKDF1:
-                PBKDF.reset(PBKDF_Class<CryptoPP::PKCS5_PBKDF1>()(settings.digest));
+    bool load(QByteArray &crypt)
+    {
+        QryptoPP::KeyMaker &keyMaker = cipher.keyMaker();
+        QXmlStreamReader xml(device);
+        QStringList Elements;
+        Elements << "/Header/Digest" << "/Header/Salt" << "/Header/IterationCount" <<
+                    "/Header/KeyLength" << "/Header/Cipher" << "/Header/Method" <<
+                    "/Header/InitVector" << "/Payload/Data" << "/Payload/HexData" << "/Trailer/Length";
+        int from = 0;
+        int length = 0;
+        crypt.resize(0);
+
+        if (!xml.readNextStartElement())
+            return false;
+
+        for (QString path; !xml.atEnd(); ) {
+            switch (xml.readNext()) {
+            case QXmlStreamReader::StartElement:
+                path += "/";
+                path += xml.name();
+                //qDebug() << path << from;
+
+                switch (Elements.indexOf(path, from)) {
+                case 0: keyMaker.setAlgorithmName(xml.readElementText()); break;
+                case 1: keyMaker.setSalt(xml.readElementText()); break;
+                case 2: keyMaker.setIterationCount(xml.readElementText().toUInt()); break;
+                case 3: cipher.setKeyLength(xml.readElementText().toUInt()); break;
+                case 4: cipher.setAlgorithmName(xml.readElementText()); break;
+                case 5: cipher.setOperationCode(xml.readElementText()); break;
+                case 6: cipher.setInitVector(xml.readElementText()); break;
+                case 7: crypt += QByteArray::fromBase64(xml.readElementText().toLatin1()); break;
+                case 8: crypt += QByteArray::fromHex(xml.readElementText().toLatin1()); break;
+                case 9: length = xml.readElementText().toUInt(); break;
+                default:
+                    continue;
+                }
+
+                ++from;
+            case QXmlStreamReader::EndElement:
+                path = path.section('/', 0, -2);
                 break;
-            case QrypticStream::PKCS5_PBKDF2_HMAC:
-                PBKDF.reset(PBKDF_Class<CryptoPP::PKCS5_PBKDF2_HMAC>()(settings.digest));
-                break;
-                /* CANNOT COMPILE
-            case QrypticStream::PKCS12_PBKDF:
-                PBKDF.reset(PBKDF_Class<CryptoPP::PKCS12_PBKDF>()(settings.digest));
-                break;
-                */
             default:
-                break;
+                continue;
             }
-
-            switch (settings.cipher) {
-            case QrypticStream::IDEA:
-                key.resize(CryptoPP::IDEA::DEFAULT_KEYLENGTH);
-                break;
-            case QrypticStream::Blowfish:
-                key.resize(CryptoPP::Blowfish::DEFAULT_KEYLENGTH);
-                break;
-            case QrypticStream::Camellia:
-                key.resize(CryptoPP::Camellia::DEFAULT_KEYLENGTH);
-                break;
-            case QrypticStream::Rijndael:
-                key.resize(CryptoPP::Rijndael::DEFAULT_KEYLENGTH);
-                break;
-            case QrypticStream::Serpent:
-                key.resize(CryptoPP::Serpent::DEFAULT_KEYLENGTH);
-                break;
-            case QrypticStream::Twofish:
-                key.resize(CryptoPP::Twofish::DEFAULT_KEYLENGTH);
-                break;
-            default:
-                break;
-            }
-
-            if (PBKDF.isNull() || key.empty()) return false;
-
-            if (salt.empty()) {
-                salt.resize(settings.saltLength);
-                prng.GenerateBlock(salt.data(), salt.size());
-            }
-
-            Q_ASSERT(settings.iterations > 0);
-            PBKDF->DeriveKey(key.data(), key.size(), 0,
-                             password.data(), password.size(),
-                             salt.data(), salt.size(), settings.iterations);
         }
 
-        return true;
+        return !xml.hasError();
     }
 
-    /*
-    template <class Method>
-    CryptoPP::StreamTransformation *decryption()
+    bool save(const QByteArray &crypt)
     {
-        using namespace QrypticStream;
-        switch (settings.cipher) {
-        case IDEA:
-            return new Method<CryptoPP::IDEA>::Decryption;
-        case Blowfish:
-            return new Method<CryptoPP::Blowfish>::Decryption;
-        case Camellia:
-            return new Method<CryptoPP::Camellia>::Decryption;
-        case Rijndael:
-            return new Method<CryptoPP::Rijndael>::Decryption;
-        case Serpent:
-            return new Method<CryptoPP::Serpent>::Decryption;
-        case Twofish:
-            return new Method<CryptoPP::Twofish>::Decryption;
-        default:
-            return 0;
-        }
-    }
-    */
-};
+        const QryptoPP::KeyMaker &keyMaker = cipher.keyMaker();
+        QXmlStreamWriter xml(device);
+        xml.setAutoFormatting(true);
+        xml.setAutoFormattingIndent(-1);
 
-template <template <typename T> class Method>
-struct Cipher_Class
-{
-    QrypticStream::Private *d;
+        xml.writeStartDocument();
+        xml.writeStartElement("cryptic.xsd", "Cryptic");
+        xml.writeAttribute("schemaVersion", QString::number(crypticVersion));
 
-    Cipher_Class(QrypticStream::Private *d) : d(d) { }
+        xml.writeStartElement("Header");
+        xml.writeTextElement("Digest", keyMaker.algorithmName());
+        xml.writeTextElement("Salt", keyMaker.salt().toHex());
+        xml.writeTextElement("IterationCount", QString::number(keyMaker.iterationCount()));
+        xml.writeTextElement("KeyLength", QString::number(cipher.keyLength()));
+        xml.writeTextElement("Cipher", cipher.algorithmName());
+        xml.writeTextElement("Method", cipher.operationCode());
+        xml.writeTextElement("InitVector", cipher.initVector().toHex());
+        xml.writeEndElement();
 
-    CryptoPP::StreamTransformation *encrypt()
-    {
-        //CryptoPP::CBC_Mode<CryptoPP::IDEA>::Encryption e;
-        //e.SetCipherWithIV();
-        switch (d->settings.cipher) {
-        case QrypticStream::IDEA:
-            d->IV.resize(CryptoPP::IDEA::IV_REQUIREMENT);
-            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
-            return new typename Method<CryptoPP::IDEA>::Encryption(d->key.data(), d->key.size(), d->IV.data());
-        case QrypticStream::Blowfish:
-            d->IV.resize(CryptoPP::Blowfish::IV_REQUIREMENT);
-            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
-            return new typename Method<CryptoPP::Blowfish>::Encryption(d->key.data(), d->key.size(), d->IV.data());
-        case QrypticStream::Camellia:
-            d->IV.resize(CryptoPP::Camellia::IV_REQUIREMENT);
-            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
-            return new typename Method<CryptoPP::Camellia>::Encryption(d->key.data(), d->key.size(), d->IV.data());
-        case QrypticStream::Rijndael:
-            d->IV.resize(CryptoPP::Rijndael::IV_REQUIREMENT);
-            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
-            return new typename Method<CryptoPP::Rijndael>::Encryption(d->key.data(), d->key.size(), d->IV.data());
-        case QrypticStream::Serpent:
-            d->IV.resize(CryptoPP::Serpent::IV_REQUIREMENT);
-            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
-            return new typename Method<CryptoPP::Serpent>::Encryption(d->key.data(), d->key.size(), d->IV.data());
-        case QrypticStream::Twofish:
-            d->IV.resize(CryptoPP::Twofish::IV_REQUIREMENT);
-            d->prng.GenerateBlock(d->IV.data(), d->IV.size());
-            return new typename Method<CryptoPP::Twofish>::Encryption(d->key.data(), d->key.size(), d->IV.data());
-        default:
-            return 0;
-        }
+        xml.writeStartElement("Payload");
+        xml.writeTextElement("Data", crypt.toBase64());
+        xml.writeEndElement();
+
+        xml.writeStartElement("Trailer");
+        xml.writeTextElement("Length", QString::number(crypt.size()));
+        xml.writeEndElement();
+
+        xml.writeEndDocument();
+        return !xml.hasError();
     }
 };
 
-const QStringList QrypticStream::Ciphers = QStringList() << "IDEA" << "Blowfish" << "Camellia" <<
-                                                            "Rijndael" << "Serpent" << "Twofish" <<
-                                                            QString();
-
-const QStringList QrypticStream::Digests = QStringList() << "Sha1" << "Sha2-256" << "Sha2-512" <<
-                                                            "Sha3-256" << "Sha3-512" <<
-                                                            QString();
-
-const QStringList QrypticStream::Methods = QStringList() << "ECB" << "CBC" << "CFB" << "OFB" << "CTR" <<
-                                                            QString();
-
-QrypticStream::QrypticStream(QIODevice *device) :
-    QObject(device),
+QryptIO::QryptIO(QIODevice *device) :
     d(new Private(device))
 {
-
 }
 
-QrypticStream::~QrypticStream()
+QryptIO::~QryptIO()
 {
     delete d;
 }
 
-QIODevice *QrypticStream::device() const
+int QryptIO::crypticVersion()
 {
-    return d->device;
-}
+    if (d->crypticVersion == -1 && d->isReadable()) {
+        QByteArray peek(d->device->peek(512));
+        QXmlStreamReader xml(peek);
+        d->crypticVersion = 0;
 
-bool QrypticStream::encrypt(const QByteArray &src)
-{
-    if (d->device && d->createKey()) {
-        QScopedPointer<CryptoPP::StreamTransformation> cipher;
-        std::string sink;
-
-        switch (d->settings.method) {
-        case ElectronicCodebook:
-            cipher.reset(Cipher_Class<CryptoPP::ECB_Mode>(d).encrypt());
-            break;
-        case CipherBlockChaining:
-            cipher.reset(Cipher_Class<CryptoPP::CBC_Mode>(d).encrypt());
-            break;
-        case CipherFeedback:
-            cipher.reset(Cipher_Class<CryptoPP::CFB_Mode>(d).encrypt());
-            break;
-        case OutputFeedback:
-            cipher.reset(Cipher_Class<CryptoPP::OFB_Mode>(d).encrypt());
-            break;
-        case Counter:
-            cipher.reset(Cipher_Class<CryptoPP::CTR_Mode>(d).encrypt());
-            break;
-        default:
-            break;
-        }
-
-        if (cipher.isNull()) return false;
-
-        using namespace CryptoPP;
-
-        StringSource(src.toStdString(), true,
-                     new StreamTransformationFilter(*cipher,
-                                                    new Base64Encoder(new StringSink(sink))));
-
-        if (d->device->isWritable() || d->device->open(QIODevice::WriteOnly)) {
-            QXmlStreamWriter stream(d->device);
-            stream.setAutoFormatting(true);
-            stream.setAutoFormattingIndent(-1);
-            stream.writeStartDocument();
-            stream.writeStartElement("cryptic.xsd", "Cryptic");
-            stream.writeStartElement("Header");
-            stream.writeTextElement("Salt",
-                                    QByteArray::fromRawData(reinterpret_cast<char*>(d->salt.data()),
-                                                            d->salt.size()).toHex());
-            stream.writeTextElement("Iterations", QString::number(d->settings.iterations));
-            stream.writeTextElement("Digest", Digests.at(d->settings.digest));
-            stream.writeTextElement("OperationMode", Methods.at(d->settings.method));
-            stream.writeTextElement("Cipher", Ciphers.at(d->settings.cipher));
-            stream.writeTextElement("InitializationVector",
-                                    QByteArray::fromRawData(reinterpret_cast<char*>(d->IV.data()),
-                                                            d->IV.size()).toHex());
-            stream.writeEndElement();
-            stream.writeStartElement("Payload");
-            stream.writeTextElement("Data", QString::fromStdString(sink));
-            stream.writeEndElement();
-            stream.writeStartElement("Trailer");
-            stream.writeTextElement("Length", QString::number(src.size()));
-            stream.writeEndDocument();
-
-            return true;
+        if (xml.readNextStartElement() && xml.name() == "Cryptic") {
+            foreach (const QXmlStreamAttribute &attr, xml.attributes()) {
+                if (attr.name() == "schemaVersion")
+                    d->crypticVersion = std::max(0, attr.value().toInt());
+            }
         }
     }
 
-    return false;
+    return d->crypticVersion;
 }
 
-void QrypticStream::setDevice(QIODevice *device)
+QryptIO::Status QryptIO::read(QByteArray &data, const QString &password)
 {
-    delete d;
-    d = new Private(device);
+    if (d->isReadable()) {
+        switch (crypticVersion()) {
+        case -1:
+            return ReadPastEnd;
+        case 0:
+            d->device->readAll().swap(data);
+            break;
+        case 1:
+            if (!password.isEmpty()) {
+                QByteArray crypt;
+
+                if (d->load(crypt)) {
+                    if (d->cipher.decrypt(data, crypt, password.toUtf8()))
+                        return Ok;
+                } else {
+                    data.clear();
+                    break;
+                }
+            }
+        default:
+            data.clear();
+            return DecryptionFailed;
+        }
+
+        if (data.isNull())
+            return ReadCorruptData;
+        else
+            return Ok;
+    }
+
+    return ReadPastEnd;
 }
 
-void QrypticStream::setPassword(const QString &plain)
+QryptIO::Status QryptIO::write(const QByteArray &data, const QString &password)
 {
-    const QByteArray password = plain.toUtf8();
-    d->password.resize(password.size());
-    memcpy(d->password.data(), password.constData(), password.size());
+    if (d->isWritable()) {
+        if (password.isNull()) {
+            if (d->device->write(data) == data.size())
+                return Ok;
+        } else {
+            QByteArray crypt;
+            d->crypticVersion = 1;
+
+            if (d->cipher.encrypt(crypt, data, password.toUtf8())) {
+                if (d->save(crypt))
+                    return Ok;
+            } else {
+                return EncryptionFailed;
+            }
+        }
+    }
+
+    return WriteFailed;
 }
 
-void QrypticStream::setSettings(const Settings &settings)
+QryptoPP::Cipher &QryptIO::cipher()
 {
-    int i = settings.cipher;
-
-    if (i < 0 || UnknownCipher <= i)
-        return;
-    else
-        i = settings.digest;
-
-    if (i < 0 || UnknownDigest <= i)
-        return;
-    else
-        d->settings = settings;
+    return d->cipher;
 }
 
-const QrypticStream::Settings &QrypticStream::settings() const
+QryptoPP::KeyMaker &QryptIO::keyMaker()
 {
-    return d->settings;
+    return d->cipher.keyMaker();
 }
