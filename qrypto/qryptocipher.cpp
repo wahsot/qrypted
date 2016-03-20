@@ -47,19 +47,19 @@ struct Cipher::Private
             const byte *IVData = reinterpret_cast<const byte*>(initVector.constData());
             switch (operation) {
             case Cipher::CipherBlockChaining:
-                cipher.reset(new typename CBC_Mode<Alg>::Decryption(key.data(), key.size(), IVData, initVector.size()));
+                cipher.reset(new typename CBC_Mode<Alg>::Decryption(key.data(), key.size(), IVData));
                 break;
             case Cipher::CipherFeedback:
-                cipher.reset(new typename CFB_Mode<Alg>::Decryption(key.data(), key.size(), IVData, initVector.size()));
+                cipher.reset(new typename CFB_Mode<Alg>::Decryption(key.data(), key.size(), IVData));
                 break;
             case Cipher::Counter:
-                cipher.reset(new typename CTR_Mode<Alg>::Decryption(key.data(), key.size(), IVData, initVector.size()));
+                cipher.reset(new typename CTR_Mode<Alg>::Decryption(key.data(), key.size(), IVData));
                 break;
             case Cipher::ElectronicCodebook:
-                cipher.reset(new typename ECB_Mode<Alg>::Decryption(key.data(), key.size(), IVData, initVector.size()));
+                cipher.reset(new typename ECB_Mode<Alg>::Decryption(key.data(), key.size(), IVData));
                 break;
             case Cipher::OutputFeedback:
-                cipher.reset(new typename OFB_Mode<Alg>::Decryption(key.data(), key.size(), IVData, initVector.size()));
+                cipher.reset(new typename OFB_Mode<Alg>::Decryption(key.data(), key.size(), IVData));
                 break;
             default:
                 break;
@@ -96,19 +96,19 @@ struct Cipher::Private
             const byte *IVData = reinterpret_cast<const byte*>(initVector.constData());
             switch (operation) {
             case Cipher::CipherBlockChaining:
-                cipher.reset(new typename CBC_Mode<Alg>::Encryption(key.data(), key.size(), IVData, initVector.size()));
+                cipher.reset(new typename CBC_Mode<Alg>::Encryption(key.data(), key.size(), IVData));
                 break;
             case Cipher::CipherFeedback:
-                cipher.reset(new typename CFB_Mode<Alg>::Encryption(key.data(), key.size(), IVData, initVector.size()));
+                cipher.reset(new typename CFB_Mode<Alg>::Encryption(key.data(), key.size(), IVData));
                 break;
             case Cipher::Counter:
-                cipher.reset(new typename CTR_Mode<Alg>::Encryption(key.data(), key.size(), IVData, initVector.size()));
+                cipher.reset(new typename CTR_Mode<Alg>::Encryption(key.data(), key.size(), IVData));
                 break;
             case Cipher::ElectronicCodebook:
-                cipher.reset(new typename ECB_Mode<Alg>::Encryption(key.data(), key.size(), IVData, initVector.size()));
+                cipher.reset(new typename ECB_Mode<Alg>::Encryption(key.data(), key.size(), IVData));
                 break;
             case Cipher::OutputFeedback:
-                cipher.reset(new typename OFB_Mode<Alg>::Encryption(key.data(), key.size(), IVData, initVector.size()));
+                cipher.reset(new typename OFB_Mode<Alg>::Encryption(key.data(), key.size(), IVData));
                 break;
             default:
                 break;
