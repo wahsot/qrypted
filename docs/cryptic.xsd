@@ -2,64 +2,73 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 	<xs:element name="Cryptic">
 		<xs:complexType>
-			<xs:attribute name="schemaVersion" type="xs:positiveInteger" default="1" />
+			<xs:attribute name="schemaVersion" type="xs:positiveInteger" fixed="1" />
 			<xs:sequence>
 				<xs:element name="Header">
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element name="Salt" type="xs:binaryHex" maxLength="64" />
-							<xs:element name="Iterations" type="xs:positiveInteger" />
-							<xs:element name="Digest">
+							<xs:element name="Digest" minOccurs="0">
 								<xs:simpleType>
 									<xs:restriction base="xs:string">
-										<xs:enumeration value="Sha1" />
-										<xs:enumeration value="Sha2-256" />
-										<xs:enumeration value="Sha2-512" />
-										<xs:enumeration value="Sha3-256" />
-										<xs:enumeration value="Sha3-512" />
+										<xs:enumeration value="RIPEMD-160" />
+										<xs:enumeration value="RIPEMD-320" />
+										<xs:enumeration value="SHA-1" /><!-- default -->
+										<xs:enumeration value="SHA-224" />
+										<xs:enumeration value="SHA-256" />
+										<xs:enumeration value="SHA-384" />
+										<xs:enumeration value="SHA-512" />
+										<xs:enumeration value="SHA-3-224" />
+										<xs:enumeration value="SHA-3-256" />
+										<xs:enumeration value="SHA-3-384" />
+										<xs:enumeration value="SHA-3-512" />
+										<xs:enumeration value="Whirlpool" />
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="Salt" type="xs:binaryHex" />
+							<xs:element name="IterationCount" type="xs:positiveInteger" />
+							<xs:element name="KeyLength" type="xs:positiveInteger" minOccurs="0" />
+							<xs:element name="Cipher">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="AES" />
+										<xs:enumeration value="Blowfish" />
+										<xs:enumeration value="Camellia" />
+										<xs:enumeration value="DES-EDE3" />
+										<xs:enumeration value="IDEA" />
+										<xs:enumeration value="SEED" />
+										<xs:enumeration value="Serpent" />
+										<xs:enumeration value="Twofish" />
 									</xs:restriction>
 								</xs:simpleType>
 							</xs:element>
 							<xs:element name="Method">
 								<xs:simpleType>
 									<xs:restriction base="xs:string">
-										<xs:enumeration value="ECB" />
 										<xs:enumeration value="CBC" />
 										<xs:enumeration value="CFB" />
-										<xs:enumeration value="OFB" />
 										<xs:enumeration value="CTR" />
+										<xs:enumeration value="ECB" />
+										<xs:enumeration value="OFB" />
 									</xs:restriction>
 								</xs:simpleType>
 							</xs:element>
-							<xs:element name="Cipher">
-								<xs:simpleType>
-									<xs:restriction base="xs:string">
-										<xs:enumeration value="Blowfish" />
-										<xs:enumeration value="Camellia" />
-										<xs:enumeration value="IDEA" />
-										<xs:enumeration value="Rijndael" />
-										<xs:enumeration value="Serpent" />
-										<xs:enumeration value="Twofish" />
-									</xs:restriction>
-								</xs:simpleType>
-							</xs:element>
-							<xs:element name="InitializationVector" type="xs:binaryHex" maxLength="1024" />
+							<xs:element name="InitVector" type="xs:binaryHex" />
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
 				<xs:element name="Payload">
 					<xs:complexType>
 						<xs:choice>
-							<xs:element name="Data" type="xs:binaryBase64" maxLength="524288" maxOccurs="unbounded" minOccurs="0" />
-							<xs:element name="HexData" type="xs:binaryHex" maxLength="524288" maxOccurs="unbounded" minOccurs="0" />
+							<xs:element name="Data" type="xs:binaryBase64" />
+							<xs:element name="HexData" type="xs:binaryHex" />
 						</xs:choice>
 					</xs:complexType>
 				</xs:element>
 				<xs:element name="Trailer">
 					<xs:complexType>
 						<xs:sequence>
-							<xs:element name="Length" type="xs:unsignedLong" />
-							<xs:element name="Checksum" type="xs:binaryHex" maxLength="1024" minLength="512" />
+							<xs:element name="Length" type="xs:unsignedInt" />
 						</xs:sequence>
 					</xs:complexType>
 				</xs:element>
