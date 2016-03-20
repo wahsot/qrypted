@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>500</height>
+    <height>520</height>
    </rect>
   </property>
   <property name="windowIcon">
@@ -43,9 +43,6 @@
     </item>
     <item>
      <widget class="QComboBox" name="cipherComboBox"/>
-    </item>
-    <item>
-     <widget class="QComboBox" name="digestComboBox"/>
     </item>
     <item>
      <widget class="QComboBox" name="methodComboBox"/>

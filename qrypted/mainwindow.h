@@ -28,8 +28,6 @@ protected:
 protected slots:
     void clipboard_dataChanged();
 
-    void document_modificationChanged(bool modified);
-
 private slots:
     void on_actionAbout_Qt_triggered();
 
@@ -76,6 +74,8 @@ private slots:
     void on_textEdit_currentCharFormatChanged(const QTextCharFormat &format);
 
     void on_textEdit_cursorPositionChanged();
+
+    void on_textEdit_windowTitleChanged();
 
 private:
     Ui::MainWindow *ui;
