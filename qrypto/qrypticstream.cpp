@@ -81,6 +81,15 @@ struct QryptIO::Private
     {
         const QryptoPP::KeyMaker &keyMaker = cipher.keyMaker();
         QXmlStreamWriter xml(device);
+        QByteArray cryptLines;
+        cryptLines.reserve(crypt.size() * 8 / 6 + crypt.size() / 180);
+
+        for (int i = 0, j; i < crypt.size(); i = j) {
+            j = std::min(i + 180, crypt.size());
+            cryptLines += '\n';
+            cryptLines += crypt.mid(i, j - i).toBase64();
+        }
+
         xml.setAutoFormatting(true);
         xml.setAutoFormattingIndent(-1);
 
@@ -99,7 +108,7 @@ struct QryptIO::Private
         xml.writeEndElement();
 
         xml.writeStartElement("Payload");
-        xml.writeTextElement("Data", crypt.toBase64());
+        xml.writeTextElement("Data", cryptLines);
         xml.writeEndElement();
 
         xml.writeStartElement("Trailer");
