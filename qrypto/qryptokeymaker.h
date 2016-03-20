@@ -101,7 +101,7 @@ public:
     void setSalt(const QByteArray &salt);
 
     void setSalt(const QString &salt)
-    { QByteArray::fromHex(salt.toLatin1()); }
+    { setSalt(QByteArray::fromHex(salt.toLatin1())); }
 
 };
 
