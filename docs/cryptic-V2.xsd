@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="Cryptic">
+		<xs:complexType>
+			<xs:attribute name="schemaVersion" type="xs:positiveInteger" fixed="2" />
+			<xs:sequence>
+				<xs:element name="Header">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Digest">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="RIPEMD-160" />
+										<xs:enumeration value="SHA-1" />
+										<xs:enumeration value="SHA-224" />
+										<xs:enumeration value="SHA-256" /><!-- default -->
+										<xs:enumeration value="SHA-384" />
+										<xs:enumeration value="SHA-512" />
+										<xs:enumeration value="SHA-3-224" />
+										<xs:enumeration value="SHA-3-256" />
+										<xs:enumeration value="SHA-3-384" />
+										<xs:enumeration value="SHA-3-512" />
+										<xs:enumeration value="Whirlpool" />
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="Salt" type="xs:binaryHex" /><!-- typically hash digest size -->
+							<xs:element name="IterationCount" type="xs:positiveInteger" /><!-- default 500000 -->
+							<xs:element name="KeyLength" type="xs:positiveInteger" minInclusive="8" /><!-- default 16 -->
+							<xs:element name="Cipher">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="AES" /><!-- default -->
+										<xs:enumeration value="Blowfish" />
+										<xs:enumeration value="Camellia" />
+										<xs:enumeration value="CAST-128" />
+										<xs:enumeration value="DES-EDE3" />
+										<xs:enumeration value="IDEA" />
+										<xs:enumeration value="SEED" />
+										<xs:enumeration value="Serpent" />
+										<xs:enumeration value="Twofish" />
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="Method">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="CBC" />
+										<xs:enumeration value="CFB" />
+										<xs:enumeration value="CTR" />
+										<xs:enumeration value="EAX" />
+										<xs:enumeration value="GCM" /><!-- default -->
+										<xs:enumeration value="OFB" />
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="InitialVector" type="xs:binaryHex" /><!-- typically cipher block size -->
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Payload">
+					<xs:complexType>
+						<xs:choice>
+							<xs:element name="Data" type="xs:binaryBase64" maxOccurs="any" />
+							<xs:element name="HexData" type="xs:binaryHex" maxOccurs="any" />
+						</xs:choice>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="Trailer">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="Length" type="xs:unsignedInt" /><!-- of plain data, should the decryptor failed to truncate -->
+							<xs:element name="Authentication" type="xs:binaryHex" minOccurs="0" /><!-- HMAC of plain data for non-authenticated methods -->
+							<xs:element name="Compression">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:enumeration value="Identity" />
+										<xs:enumeration value="Deflate" />
+										<xs:enumeration value="GZip" /><!-- default -->
+										<xs:enumeration value="ZLib" />
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
