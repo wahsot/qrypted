@@ -1,4 +1,4 @@
-/* QryptoPP 2016
+/* Qrypto 2016
 **
 ** GNU Lesser General Public License Usage
 ** This file may be used under the terms of the GNU Lesser
@@ -9,19 +9,20 @@
 ** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
 ** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 **
+** Botan 1.11 is licensed under Simplified BSD License
 ** CryptoPP 5.6.2 is licensed under Boost Software License 1.0
 **/
-#ifndef QRYPTOPP_KEYMAKER_H
-#define QRYPTOPP_KEYMAKER_H
+#ifndef QRYPTO_KEYMAKER_H
+#define QRYPTO_KEYMAKER_H
 
 #include <QStringList>
 
-namespace QryptoPP
+namespace Qrypto
 {
 
 /**
  * @brief The KeyMaker class conforms to PKCS #5 PBKDF2-HMAC
- * @ref https://tools.ietf.org/html/rfc2898#section-7.1
+ * @ref https://tools.ietf.org/html/rfc2898#section-5.2
  */
 class KeyMaker
 {
@@ -41,6 +42,7 @@ public:
         Sha3_256,
         Sha3_384,
         Sha3_512,
+        Tiger,
         Whirlpool,
         UnknownAlgorithm
     };
@@ -52,7 +54,7 @@ public:
      * @param algorithm
      * @param iterationCount
      */
-    KeyMaker(Algorithm algorithm = Sha1, uint iterationCount = 100000);
+    KeyMaker(Algorithm algorithm = Sha256, uint iterationCount = 500000);
 
     KeyMaker(const KeyMaker &keyMaker);
 
@@ -68,13 +70,29 @@ public:
     KeyMaker &operator=(const KeyMaker &keyMaker);
 
     /**
-     * @brief deriveKey
-     * @param keyData can be either char* or uchar*
-     * @param desiredKeyLength should be ≤ allocated keyData byte count
+     * @brief deriveKey generates internal key
      * @param password should not be null
-     * @return derived key length
+     * @param keyLength in bytes
+     * @param milliseconds minimum time for key derivation
+     * @return derived key length, zero on error
      */
-    uint deriveKey(void *keyData, uint desiredKeyLength, const QByteArray &password);
+    uint deriveKey(const QByteArray &password, uint keyLength = 16, uint milliseconds = 0);
+
+    const uchar *keyData() const;
+
+    uint keyLength() const;
+
+    /**
+     * @brief authenticate message using HMAC of current Algorithm with internal key
+     * @param messageData
+     * @param messageSize in bytes
+     * @return digest code or null QByteArray on error
+     * @ref https://tools.ietf.org/html/rfc2898#section-7.1
+     */
+    QByteArray authenticate(const char *messageData, uint messageSize);
+
+    QByteArray authenticate(const QByteArray &message)
+    { return authenticate(message.constData(), message.size()); }
 
     Algorithm algorithm() const;
 
@@ -82,6 +100,10 @@ public:
 
     QString algorithmName() const;
 
+    /**
+     * @brief setAlgorithmName
+     * @param algorithmName will be matched Caseinsensitively
+     */
     void setAlgorithmName(const QString &algorithmName);
 
     uint iterationCount() const;
@@ -100,11 +122,11 @@ public:
      */
     void setSalt(const QByteArray &salt);
 
-    void setSalt(const QString &salt)
-    { setSalt(QByteArray::fromHex(salt.toLatin1())); }
+    void setSalt(const QString &saltHex)
+    { setSalt(QByteArray::fromHex(saltHex.toLatin1())); }
 
 };
 
 }
 
-#endif // QRYPTOPP_KEYMAKER_H
+#endif // QRYPTO_KEYMAKER_H

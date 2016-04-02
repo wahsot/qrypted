@@ -95,7 +95,7 @@ struct Cipher::Private
         SimpleKeyingInterface *keying = dynamic_cast<SimpleKeyingInterface*>(cipher);
         StreamTransformation *stream = dynamic_cast<StreamTransformation*>(cipher);
         AuthenticatedSymmetricCipher *authentic = dynamic_cast<AuthenticatedSymmetricCipher*>(stream);
-        keyLength = keyMaker.deriveKey(keying->GetValidKeyLength(keyLength), pwd);
+        keyLength = keyMaker.deriveKey(pwd, keying->GetValidKeyLength(keyLength));
 
         if (keyLength && !initialVector.isNull()) {
             std::string str;
@@ -130,7 +130,7 @@ struct Cipher::Private
         for (QByteArray salt(initialVector.size(), Qt::Uninitialized); !salt.isEmpty(); salt.clear()) {
             prng.GenerateBlock(reinterpret_cast<byte*>(salt.data()), salt.size());
             keyMaker.setSalt(salt);
-            keyLength = keyMaker.deriveKey(keying->GetValidKeyLength(keyLength), pwd);
+            keyLength = keyMaker.deriveKey(pwd, keying->GetValidKeyLength(keyLength), 500);
         }
 
         while (initialVector.size() <= int(sizeof(time_t)))

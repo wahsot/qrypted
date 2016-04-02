@@ -64,7 +64,7 @@ struct KeyMaker::Private
     }
 
     template <class Alg>
-    size_t deriveKey(size_t dkLen, const QByteArray &pwd)
+    size_t deriveKey(size_t dkLen, const QByteArray &pwd, uint ms)
     {
         CryptoPP::PKCS5_PBKDF2_HMAC<Alg> PBKDF;
 
@@ -75,10 +75,10 @@ struct KeyMaker::Private
         }
 
         key.resize(std::min(PBKDF.MaxDerivedKeyLength(), dkLen));
-        key.resize(PBKDF.DeriveKey(key.data(), key.size(), 0,
-                                   reinterpret_cast<const byte*>(pwd.constData()), pwd.size(),
-                                   reinterpret_cast<const byte*>(salt.constData()), salt.size(),
-                                   iteration));
+        iteration = PBKDF.DeriveKey(key.data(), key.size(), 0,
+                                    reinterpret_cast<const byte*>(pwd.constData()), pwd.size(),
+                                    reinterpret_cast<const byte*>(salt.constData()), salt.size(),
+                                    iteration, ms / 1000.0);
 
         return key.size();
     }
@@ -152,35 +152,35 @@ QByteArray KeyMaker::authenticate(const char *messageData, uint messageSize)
     return code;
 }
 
-uint KeyMaker::deriveKey(uint desiredKeyLength, const QByteArray &password)
+uint KeyMaker::deriveKey(const QByteArray &password, uint keyLength, uint milliseconds)
 {
     switch (d->algorithm) {
     case RipeMD_160:
-        return d->deriveKey<CryptoPP::RIPEMD160>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::RIPEMD160>(keyLength, password, milliseconds);
     case RipeMD_320:
-        return d->deriveKey<CryptoPP::RIPEMD320>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::RIPEMD320>(keyLength, password, milliseconds);
     case Sha1:
-        return d->deriveKey<CryptoPP::SHA1>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::SHA1>(keyLength, password, milliseconds);
     case Sha224:
-        return d->deriveKey<CryptoPP::SHA224>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::SHA224>(keyLength, password, milliseconds);
     case Sha256:
-        return d->deriveKey<CryptoPP::SHA256>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::SHA256>(keyLength, password, milliseconds);
     case Sha384:
-        return d->deriveKey<CryptoPP::SHA384>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::SHA384>(keyLength, password, milliseconds);
     case Sha512:
-        return d->deriveKey<CryptoPP::SHA512>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::SHA512>(keyLength, password, milliseconds);
     case Sha3_224:
-        return d->deriveKey<CryptoPP::SHA3_224>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::SHA3_224>(keyLength, password, milliseconds);
     case Sha3_256:
-        return d->deriveKey<CryptoPP::SHA3_256>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::SHA3_256>(keyLength, password, milliseconds);
     case Sha3_384:
-        return d->deriveKey<CryptoPP::SHA3_384>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::SHA3_384>(keyLength, password, milliseconds);
     case Sha3_512:
-        return d->deriveKey<CryptoPP::SHA3_512>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::SHA3_512>(keyLength, password, milliseconds);
     case Tiger:
-        return d->deriveKey<CryptoPP::Tiger>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::Tiger>(keyLength, password, milliseconds);
     case Whirlpool:
-        return d->deriveKey<CryptoPP::Whirlpool>(desiredKeyLength, password);
+        return d->deriveKey<CryptoPP::Whirlpool>(keyLength, password, milliseconds);
     default:
         return 0;
     }
