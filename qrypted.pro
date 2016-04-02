@@ -10,7 +10,8 @@ OBJECTS_DIR = $$UI_DIR
 MOC_DIR = $$UI_DIR
 RCC_DIR = $$UI_DIR
 
-include(qrypto.pri)
+#include(qrypto/botan.pri)
+include(qrypto/cryptopp.pri)
 
 SOURCES   += $$PWD/qrypted/main.cpp \
              $$PWD/qrypted/mainwindow.cpp

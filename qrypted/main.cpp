@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     QTranslator tr;
     a.setApplicationName("Qrypted");
-    a.setApplicationVersion("2016.0311");
+    a.setApplicationVersion("2016.0402");
 
     for (QSettings settings; settings.isWritable(); ) {
         QVariant ln = settings.value("Language");

@@ -59,6 +59,8 @@ private slots:
 
     void on_actionRead_Only_Mode_triggered(bool checked);
 
+    void on_actionReload_triggered();
+
     void on_actionSave_As_triggered();
 
     void on_actionSave_triggered();
