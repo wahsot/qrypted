@@ -7,6 +7,8 @@ HEADERS += $$PWD/pointerator.h \
            $$PWD/qrypticstream.h \
            $$PWD/qryptocipher.h \
            $$PWD/qryptocompress.h \
-           $$PWD/qryptokeymaker.h
+           $$PWD/qryptokeymaker.h \
+           $$PWD/sequre.h
 
-SOURCES += $$PWD/qrypticstream.cpp
+SOURCES += $$PWD/qrypticstream.cpp \
+           $$PWD/sequre.cpp
