@@ -1,5 +1,7 @@
 #include "../qryptokeymaker.h"
 
+#include "../sequre.h"
+
 #include <QScopedPointer>
 
 #include <cryptopp/cryptlib.h>
@@ -17,13 +19,16 @@ namespace Qrypto
 struct KeyMaker::Private
 {
     KeyMaker::Algorithm algorithm;
-    uint iteration;
     CryptoPP::SecByteBlock key;
     QByteArray salt;
+    uint iteration;
+    uint iterationTime;
 
-    Private(KeyMaker::Algorithm algorithm, uint iteration) :
+    Private(KeyMaker::Algorithm algorithm, uint keyLength) :
         algorithm(algorithm),
-        iteration(iteration)
+        key(keyLength),
+        iteration(100000),
+        iterationTime(0)
     { }
 
     CryptoPP::MessageAuthenticationCode *getHMAC()
@@ -64,23 +69,44 @@ struct KeyMaker::Private
     }
 
     template <class Alg>
-    size_t deriveKey(size_t dkLen, const QByteArray &pwd, uint ms)
+    Error deriveKey(const char *pwData, uint pwSize, size_t keyLength)
     {
         CryptoPP::PKCS5_PBKDF2_HMAC<Alg> PBKDF;
 
-        if (salt.isEmpty()) {
-            salt.resize(Alg::DIGESTSIZE);
-            CryptoPP::AutoSeededRandomPool().GenerateBlock(reinterpret_cast<byte*>(salt.data()),
-                                                           salt.size());
+        try {
+            if (!keyLength)
+                keyLength = key.size();
+
+            if (keyLength)
+                key.resize(std::min(keyLength, PBKDF.MaxDerivedKeyLength()));
+            else
+                throw CryptoPP::InvalidKeyLength("PBKDF", key.size());
+
+            if (salt.isEmpty())
+                salt.resize(Alg::DIGESTSIZE / 2);
+
+            for (const QByteArray zero(salt.size(), '\0'); salt == zero; )
+                CryptoPP::AutoSeededRandomPool().GenerateBlock(reinterpret_cast<byte*>(salt.data()),
+                                                               salt.size());
+
+            iteration = PBKDF.DeriveKey(key.data(), key.size(), 0,
+                                        reinterpret_cast<const byte*>(pwData), pwSize,
+                                        reinterpret_cast<const byte*>(salt.constData()), salt.size(),
+                                        iteration, iterationTime / 1000.0);
+
+            return NoError;
+        } catch (const std::bad_alloc &exc) {
+            return OutOfMemory;
+        } catch (const CryptoPP::Exception &exc) {
+            qCritical(exc.what());
+
+            switch (exc.GetErrorType()) {
+            case CryptoPP::Exception::INVALID_ARGUMENT:
+                return InvalidArgument;
+            default:
+                return UnknownError;
+            }
         }
-
-        key.resize(std::min(PBKDF.MaxDerivedKeyLength(), dkLen));
-        iteration = PBKDF.DeriveKey(key.data(), key.size(), 0,
-                                    reinterpret_cast<const byte*>(pwd.constData()), pwd.size(),
-                                    reinterpret_cast<const byte*>(salt.constData()), salt.size(),
-                                    iteration, ms / 1000.0);
-
-        return key.size();
     }
 };
 
@@ -104,16 +130,16 @@ const QStringList KeyMaker::AlgorithmNames =
                          CryptoPP::Whirlpool::StaticAlgorithmName() <<
                          QString();
 
-KeyMaker::KeyMaker(Algorithm algorithm, uint iterationCount) :
-    d(new Private(algorithm, iterationCount))
+KeyMaker::KeyMaker(Algorithm algorithm, uint keyLength) :
+    d(new Private(algorithm, keyLength))
 { }
 
 KeyMaker::KeyMaker(const KeyMaker &keyMaker) :
     d(new Private(*keyMaker.d))
 { }
 
-KeyMaker::KeyMaker(const QString &algorithmName, uint iterationCount) :
-    d(new Private(UnknownAlgorithm, iterationCount))
+KeyMaker::KeyMaker(const QString &algorithmName, uint keyLength) :
+    d(new Private(UnknownAlgorithm, keyLength))
 {
     setAlgorithmName(algorithmName);
 }
@@ -139,56 +165,66 @@ QString KeyMaker::algorithmName() const
     return AlgorithmNames.at(d->algorithm);
 }
 
-QByteArray KeyMaker::authenticate(const char *messageData, uint messageSize)
+QByteArray KeyMaker::authenticate(const char *messageData, uint messageSize, uint truncatedSize) const
 {
     QScopedPointer<CryptoPP::MessageAuthenticationCode> HMAC(d->getHMAC());
     QByteArray code;
 
     if (HMAC) {
-        HMAC->CalculateDigest(reinterpret_cast<byte*>(code.fill(0, HMAC->DigestSize()).data()),
-                              reinterpret_cast<const byte*>(messageData), messageSize);
+        if (0 < truncatedSize && truncatedSize < HMAC->DigestSize())
+            HMAC->CalculateTruncatedDigest(reinterpret_cast<byte*>(code.fill(0, truncatedSize).data()),
+                                           truncatedSize, reinterpret_cast<const byte*>(messageData),
+                                           messageSize);
+        else
+            HMAC->CalculateDigest(reinterpret_cast<byte*>(code.fill(0, HMAC->DigestSize()).data()),
+                                  reinterpret_cast<const byte*>(messageData), messageSize);
     }
 
     return code;
 }
 
-uint KeyMaker::deriveKey(const QByteArray &password, uint keyLength, uint milliseconds)
+Error KeyMaker::deriveKey(const char *passwordData, uint passwordSize, uint keyLength)
 {
     switch (d->algorithm) {
     case RipeMD_160:
-        return d->deriveKey<CryptoPP::RIPEMD160>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::RIPEMD160>(passwordData, passwordSize, keyLength);
     case RipeMD_320:
-        return d->deriveKey<CryptoPP::RIPEMD320>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::RIPEMD320>(passwordData, passwordSize, keyLength);
     case Sha1:
-        return d->deriveKey<CryptoPP::SHA1>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::SHA1>(passwordData, passwordSize, keyLength);
     case Sha224:
-        return d->deriveKey<CryptoPP::SHA224>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::SHA224>(passwordData, passwordSize, keyLength);
     case Sha256:
-        return d->deriveKey<CryptoPP::SHA256>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::SHA256>(passwordData, passwordSize, keyLength);
     case Sha384:
-        return d->deriveKey<CryptoPP::SHA384>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::SHA384>(passwordData, passwordSize, keyLength);
     case Sha512:
-        return d->deriveKey<CryptoPP::SHA512>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::SHA512>(passwordData, passwordSize, keyLength);
     case Sha3_224:
-        return d->deriveKey<CryptoPP::SHA3_224>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::SHA3_224>(passwordData, passwordSize, keyLength);
     case Sha3_256:
-        return d->deriveKey<CryptoPP::SHA3_256>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::SHA3_256>(passwordData, passwordSize, keyLength);
     case Sha3_384:
-        return d->deriveKey<CryptoPP::SHA3_384>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::SHA3_384>(passwordData, passwordSize, keyLength);
     case Sha3_512:
-        return d->deriveKey<CryptoPP::SHA3_512>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::SHA3_512>(passwordData, passwordSize, keyLength);
     case Tiger:
-        return d->deriveKey<CryptoPP::Tiger>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::Tiger>(passwordData, passwordSize, keyLength);
     case Whirlpool:
-        return d->deriveKey<CryptoPP::Whirlpool>(keyLength, password, milliseconds);
+        return d->deriveKey<CryptoPP::Whirlpool>(passwordData, passwordSize, keyLength);
     default:
-        return 0;
+        return NotImplemented;
     }
 }
 
 uint KeyMaker::iterationCount() const
 {
     return d->iteration;
+}
+
+uint KeyMaker::iterationTime() const
+{
+    return d->iterationTime;
 }
 
 const uchar *KeyMaker::keyData() const
@@ -226,6 +262,16 @@ void KeyMaker::setAlgorithmName(const QString &algorithmName)
 void KeyMaker::setIterationCount(uint iterationCount)
 {
     d->iteration = iterationCount;
+}
+
+void KeyMaker::setIterationTime(uint milliseconds)
+{
+    d->iterationTime = milliseconds;
+}
+
+void KeyMaker::setKeyLength(uint keyLength)
+{
+    d->key.resize(keyLength);
 }
 
 void KeyMaker::setSalt(const QByteArray &salt)
