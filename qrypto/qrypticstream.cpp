@@ -7,6 +7,7 @@
 #include "qryptocipher.h"
 #include "qryptocompress.h"
 #include "qryptokeymaker.h"
+#include "sequre.h"
 
 struct QryptIO::Private
 {
@@ -16,16 +17,17 @@ struct QryptIO::Private
     QryptIO::Status status;
     QIODevice *device;
     int crypticVersion;
-    uint plainLength;
+    QByteArray crypt;
+    Qrypto::SequreBytes plain;
     Qrypto::Compress compress;
     Qrypto::Cipher cipher;
+    Qrypto::KeyMaker keyMaker;
 
     Private(QIODevice *device) :
         error(Qrypto::NoError),
         status(QryptIO::Ok),
         device(device),
-        crypticVersion(-1),
-        plainLength(0)
+        crypticVersion(-1)
     { }
 
     bool isReadable()
@@ -38,13 +40,12 @@ struct QryptIO::Private
         return device && (device->isWritable() || device->open(QIODevice::WriteOnly));
     }
 
-    bool loadV1(QByteArray &crypt)
+    bool loadV1()
     {
         Q_ASSERT(crypticVersion > 0);
-        Qrypto::KeyMaker &keyMaker = cipher.keyMaker();
         QXmlStreamReader xml(device);
         int from = 0;
-        crypt.resize(0);
+        crypt.clear();
 
         if (!xml.readNextStartElement())
             return false;
@@ -52,20 +53,26 @@ struct QryptIO::Private
         for (QString path; !xml.atEnd(); ) {
             switch (xml.readNext()) {
             case QXmlStreamReader::StartElement:
-                path += "/";
+                path += '/';
                 path += xml.name();
 
                 switch (CrypticV1.indexOf(path, from)) {
                 case 0: keyMaker.setAlgorithmName(xml.readElementText()); break;
                 case 1: keyMaker.setSalt(xml.readElementText()); break;
                 case 2: keyMaker.setIterationCount(xml.readElementText().toUInt()); break;
-                case 3: cipher.setKeyLength(xml.readElementText().toUInt()); break;
+                case 3: keyMaker.setKeyLength(xml.readElementText().toUInt()); break;
                 case 4: cipher.setAlgorithmName(xml.readElementText()); break;
                 case 5: cipher.setOperationCode(xml.readElementText()); break;
                 case 6: cipher.setInitialVector(xml.readElementText()); break;
-                case 7: crypt += QByteArray::fromBase64(xml.readElementText().toLatin1()); break;
-                case 8: crypt += QByteArray::fromHex(xml.readElementText().toLatin1()); break;
-                case 9: plainLength = xml.readElementText().toUInt(); break;
+                case 7:
+                    crypt += QByteArray::fromBase64(xml.readElementText().toLatin1());
+                    --from; // may occur many times
+                    break;
+                case 8:
+                    crypt += QByteArray::fromHex(xml.readElementText().toLatin1());
+                    --from; // may occur many times
+                    break;
+                case 9: plain.reserve(xml.readElementText().toUInt()); break;
                 default:
                     continue;
                 }
@@ -82,13 +89,12 @@ struct QryptIO::Private
         return !xml.hasError();
     }
 
-    bool loadV2(QByteArray &crypt)
+    bool loadV2()
     {
         Q_ASSERT(crypticVersion > 0);
-        Qrypto::KeyMaker &keyMaker = cipher.keyMaker();
         QXmlStreamReader xml(device);
         int from = 0;
-        crypt.resize(0);
+        crypt.clear();
 
         if (!xml.readNextStartElement())
             return false;
@@ -96,14 +102,14 @@ struct QryptIO::Private
         for (QString path; !xml.atEnd(); ) {
             switch (xml.readNext()) {
             case QXmlStreamReader::StartElement:
-                path += "/";
+                path += '/';
                 path += xml.name();
 
                 switch (CrypticV2.indexOf(path, from)) {
                 case  0: keyMaker.setAlgorithmName(xml.readElementText()); break;
                 case  1: keyMaker.setSalt(xml.readElementText()); break;
                 case  2: keyMaker.setIterationCount(xml.readElementText().toUInt()); break;
-                case  3: cipher.setKeyLength(xml.readElementText().toUInt()); break;
+                case  3: keyMaker.setKeyLength(xml.readElementText().toUInt()); break;
                 case  4: cipher.setAlgorithmName(xml.readElementText()); break;
                 case  5: cipher.setOperationCode(xml.readElementText()); break;
                 case  6: cipher.setInitialVector(xml.readElementText()); break;
@@ -115,7 +121,7 @@ struct QryptIO::Private
                     crypt += QByteArray::fromHex(xml.readElementText().toLatin1());
                     --from; // may occur many times
                     break;
-                case  9: plainLength = xml.readElementText().toUInt(); break;
+                case  9: plain.reserve(xml.readElementText().toUInt()); break;
                 case 10: cipher.setAuthentication(xml.readElementText()); break;
                 case 11: compress.setAlgorithmName(xml.readElementText()); break;
                 default:
@@ -134,9 +140,8 @@ struct QryptIO::Private
         return !xml.hasError();
     }
 
-    bool save(const QByteArray &crypt, const QByteArray &plain)
+    bool save()
     {
-        const Qrypto::KeyMaker &keyMaker = cipher.keyMaker();
         QXmlStreamWriter xml(device);
 
         xml.setAutoFormatting(true);
@@ -152,7 +157,7 @@ struct QryptIO::Private
         xml.writeTextElement("Digest", keyMaker.algorithmName());
         xml.writeTextElement("Salt", QString::fromLatin1(keyMaker.salt().toHex()));
         xml.writeTextElement("IterationCount", QString::number(keyMaker.iterationCount()));
-        xml.writeTextElement("KeyLength", QString::number(cipher.keyLength()));
+        xml.writeTextElement("KeyLength", QString::number(keyMaker.keyLength()));
         xml.writeTextElement("Cipher", cipher.algorithmName());
         xml.writeTextElement("Method", cipher.operationCode());
         xml.writeTextElement("InitialVector", QString::fromLatin1(cipher.initialVector().toHex()));
@@ -230,39 +235,54 @@ int QryptIO::crypticVersion()
     return d->crypticVersion;
 }
 
-Qrypto::Error QryptIO::error() const
+Qrypto::Cipher &QryptIO::cipher()
 {
-    return d->error;
+    return d->cipher;
 }
 
-QryptIO::Status QryptIO::read(QByteArray &data, const QString &password)
+Qrypto::Compress &QryptIO::compress()
+{
+    return d->compress;
+}
+
+QryptIO::Status QryptIO::decrypt(QByteArray &data, const QString &password)
 {
     d->error = Qrypto::NoError;
-    d->status = ReadPastEnd;
+    d->status = Ok;
     data.clear();
 
-    if (d->isReadable()) {
-        QByteArray crypt;
+    if (d->isReadable() || !d->crypt.isEmpty()) {
+        Qrypto::SequreBytes sequre(password);
 
         switch (crypticVersion()) {
         case 0: // non-cryptic
-            d->device->readAll().swap(data);
+            if (!d->device->atEnd())
+                d->device->readAll().swap(d->crypt);
 
-            if (!data.isNull())
-                d->status = Ok;
+            data = d->crypt;
+
+            if (data.isNull())
+                d->status = ReadCorruptData;
 
             break;
         case 1:
-            if (d->loadV1(crypt)) {
-                d->status = DecryptionFailed;
+            if (!d->crypt.isEmpty() || d->loadV1()) {
+                d->error = d->keyMaker.deriveKey(*sequre, d->cipher.validateKeyLength(d->keyMaker.keyLength()));
 
-                if (d->cipher.decrypt(data, crypt, password.toUtf8())) {
-                    if (data.startsWith("<!DOCTYPE HTML "))
-                        d->status = Ok;
-                    else
-                        d->error = Qrypto::IntegrityError;
+                if (d->error) {
+                    d->status = KeyDerivationError;
                 } else {
-                    d->error = d->cipher.error();
+                    d->plain.resize(0);
+                    d->error = d->cipher.decrypt(d->plain, d->crypt, d->keyMaker);
+
+                    if (d->error) {
+                        d->status = CryptographicError;
+                    } else if (d->plain->startsWith("<!DOCTYPE HTML ")) {
+                        d->plain->swap(data);
+                    } else {
+                        d->error = Qrypto::IntegrityError;
+                        d->status = CryptographicError;
+                    }
                 }
             } else {
                 d->status = ReadCorruptData;
@@ -270,18 +290,27 @@ QryptIO::Status QryptIO::read(QByteArray &data, const QString &password)
 
             break;
         case 2:
-            if (d->loadV2(crypt)) {
-                QByteArray plain;
-                d->status = DecryptionFailed;
+            if (!d->crypt.isEmpty() || d->loadV2()) {
+                d->error = d->keyMaker.deriveKey(*sequre, d->cipher.validateKeyLength(d->keyMaker.keyLength()));
 
-                if (d->cipher.decrypt(plain, crypt, password.toUtf8())) {
-                    crypt.clear();
-                    d->error = d->compress.inflate(data, plain);
-
-                    if (d->error == Qrypto::NoError)
-                        d->status = Ok;
+                if (d->error) {
+                    d->status = KeyDerivationError;
                 } else {
-                    d->error = d->cipher.error();
+                    d->plain.resize(0);
+                    d->error = d->cipher.decrypt(d->plain, d->crypt, d->keyMaker);
+
+                    if (d->error) {
+                        d->status = CryptographicError;
+                    } else {
+                        sequre.reserve(d->plain.capacity());
+                        sequre.resize(0);
+                        d->error = d->compress.inflate(sequre, *d->plain);
+
+                        if (d->error)
+                            d->status = CompressionError;
+                        else
+                            sequre->swap(data);
+                    }
                 }
             } else {
                 d->status = ReadCorruptData;
@@ -291,36 +320,51 @@ QryptIO::Status QryptIO::read(QByteArray &data, const QString &password)
         default:
             d->status = ReadCorruptData;
         }
+    } else {
+        d->status = ReadPastEnd;
     }
 
     return d->status;
 }
 
-QryptIO::Status QryptIO::write(const QByteArray &data, const QString &password)
+QIODevice *QryptIO::device() const
+{
+    return d->device;
+}
+
+QryptIO::Status QryptIO::encrypt(const QByteArray &data, const QString &password)
 {
     d->error = Qrypto::NoError;
     d->status = WriteFailed;
 
     if (d->isWritable()) {
-        if (password.isNull()) {
+        if (password.isEmpty()) {
             if (d->device->write(data) == data.size())
                 d->status = Ok;
         } else {
-            QByteArray crypt, plain;
-            d->crypticVersion = 2;
-            d->compress.algorithm = Qrypto::Compress::GZip; // TODO: make this configurable
+            const Qrypto::SequreBytes pwd(password);
+            d->error = d->keyMaker.deriveKey(*pwd, d->cipher.validateKeyLength(d->keyMaker.keyLength()));
 
-            if (d->compress.deflate(plain, data) != Qrypto::NoError) {
-                d->compress.algorithm = Qrypto::Compress::Identity;
-                plain = data;
-            }
-
-            if (d->cipher.encrypt(crypt, plain, password.toUtf8())) {
-                if (d->save(crypt, plain))
-                    d->status = Ok;
+            if (d->error) {
+                d->status = KeyDerivationError;
             } else {
-                d->error = d->cipher.error();
-                d->status = EncryptionFailed;
+                d->error = d->compress.deflate(d->plain, data);
+
+                if (d->error) {
+                    d->status = CompressionError;
+                } else {
+                    d->error = d->cipher.encrypt(d->crypt, d->plain, d->keyMaker);
+
+                    if (d->error) {
+                        d->status = CryptographicError;
+                    } else {
+                        d->crypticVersion = 2;
+                        d->plain.resize(data.size()); // plain length will be saved
+
+                        if (d->save())
+                            d->status = Ok;
+                    }
+                }
             }
         }
     }
@@ -328,14 +372,14 @@ QryptIO::Status QryptIO::write(const QByteArray &data, const QString &password)
     return d->status;
 }
 
-Qrypto::Cipher &QryptIO::cipher()
+Qrypto::Error QryptIO::error() const
 {
-    return d->cipher;
+    return d->error;
 }
 
 Qrypto::KeyMaker &QryptIO::keyMaker()
 {
-    return d->cipher.keyMaker();
+    return d->keyMaker;
 }
 
 QryptIO::Status QryptIO::status() const
