@@ -3,7 +3,10 @@
 
 #include <QMainWindow>
 
+class QFileDevice;
 class QTextCharFormat;
+
+class QryptIO;
 
 namespace Ui {
 class MainWindow;
@@ -18,7 +21,13 @@ public:
 
     ~MainWindow();
 
+    QString getErrorString(const QFileDevice &fileDevice) const;
+
+    QString getErrorString(const QryptIO &qryptic) const;
+
     bool openFile(const QString &fileName);
+
+    bool saveFile(const QString &fileName);
 
 protected:
     void closeEvent(QCloseEvent *event);
@@ -55,8 +64,6 @@ private slots:
 
     void on_actionOverwrite_Mode_triggered(bool checked);
 
-    void on_actionQuit_triggered();
-
     void on_actionRead_Only_Mode_triggered(bool checked);
 
     void on_actionReload_triggered();
@@ -64,6 +71,8 @@ private slots:
     void on_actionSave_As_triggered();
 
     void on_actionSave_triggered();
+
+    void on_actionSwitch_Application_Language_triggered();
 
     void on_actionText_Color_triggered();
 

@@ -82,13 +82,26 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <widget class="QMenu" name="menuOpen_Recent">
+     <property name="title">
+      <string>O&amp;pen Recent</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-open-recent">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+     <addaction name="separator"/>
+     <addaction name="actionClear_List"/>
+    </widget>
     <addaction name="actionNew"/>
+    <addaction name="separator"/>
     <addaction name="actionOpen"/>
-    <addaction name="actionReload"/>
+    <addaction name="menuOpen_Recent"/>
     <addaction name="separator"/>
     <addaction name="actionSave"/>
     <addaction name="actionSave_As"/>
     <addaction name="separator"/>
+    <addaction name="actionReload"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -114,6 +127,8 @@
     <property name="title">
      <string>He&amp;lp</string>
     </property>
+    <addaction name="actionSwitch_Application_Language"/>
+    <addaction name="separator"/>
     <addaction name="actionAbout_Qt"/>
     <addaction name="actionAbout"/>
    </widget>
@@ -612,10 +627,11 @@
   </action>
   <action name="actionReload">
    <property name="icon">
-    <iconset theme="view-refresh"/>
+    <iconset theme="view-refresh">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
-    <string>Reload</string>
+    <string>&amp;Reload</string>
    </property>
    <property name="shortcut">
     <string>F5</string>
@@ -629,7 +645,20 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Encryption Toolbar</string>
+    <string>E&amp;ncryption Toolbar</string>
+   </property>
+  </action>
+  <action name="actionClear_List">
+   <property name="text">
+    <string>Clear &amp;List</string>
+   </property>
+  </action>
+  <action name="actionSwitch_Application_Language">
+   <property name="icon">
+    <iconset theme="preferences-desktop-locale"/>
+   </property>
+   <property name="text">
+    <string>Switch Application &amp;Language…</string>
    </property>
   </action>
  </widget>
