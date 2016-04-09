@@ -1,42 +1,49 @@
 #include "../qryptocompress.h"
 
+#include "../sequre.h"
+
 #include <QScopedPointer>
 
 #include <cryptopp/gzip.h>
 #include <cryptopp/zlib.h>
+
+namespace Qrypto
+{
+typedef CryptoPP::StringSinkTemplate<SequreBytes> SequreSink;
+}
 
 using namespace Qrypto;
 
 const QStringList Compress::AlgorithmNames =
         QStringList() << "Identity" << "Deflate" << "GZip" << "ZLib" << QString();
 
-Error Compress::deflate(QByteArray &compressed, const QByteArray &data, int deflateLevel)
+Error Compress::deflate(SequreBytes &deflated, const QByteArray &data, int deflateLevel)
 {
-    std::string dst;
     QScopedPointer<CryptoPP::Deflator> deflator;
     deflateLevel = qBound(0, deflateLevel, 9);
 
     switch (algorithm) {
     case Identity:
-        compressed = data;
+        deflated.assign(data);
         return NoError;
     case Deflate:
-        deflator.reset(new CryptoPP::Deflator(new CryptoPP::StringSink(dst), deflateLevel));
+        deflator.reset(new CryptoPP::Deflator(new SequreSink(deflated), deflateLevel));
         break;
     case GZip:
-        deflator.reset(new CryptoPP::Gzip(new CryptoPP::StringSink(dst), deflateLevel));
+        deflator.reset(new CryptoPP::Gzip(new SequreSink(deflated), deflateLevel));
         break;
     case ZLib:
-        deflator.reset(new CryptoPP::ZlibCompressor(new CryptoPP::StringSink(dst), deflateLevel));
+        deflator.reset(new CryptoPP::ZlibCompressor(new SequreSink(deflated), deflateLevel));
         break;
     default:
         return NotImplemented;
     }
 
     try {
-        compressed.clear();
-        CryptoPP::StringSource(data.toStdString(), true, deflator.take());
-        QByteArray::fromStdString(dst).swap(compressed);
+        const SequreStr str(data);
+        deflated.reserve(data.size());
+        deflated.resize(0);
+        CryptoPP::StringSource(*str, true, deflator.take());
         return NoError;
     } catch (const std::bad_alloc &exc) {
         return OutOfMemory;
@@ -46,32 +53,32 @@ Error Compress::deflate(QByteArray &compressed, const QByteArray &data, int defl
     }
 }
 
-Error Compress::inflate(QByteArray &data, const QByteArray &compressed, bool repeat)
+Error Compress::inflate(SequreBytes &inflated, const QByteArray &data, bool repeat)
 {
-    std::string dst;
     QScopedPointer<CryptoPP::Inflator> inflator;
 
     switch (algorithm) {
     case Identity:
-        data = compressed;
+        inflated.assign(data);
         return NoError;
     case Deflate:
-        inflator.reset(new CryptoPP::Inflator(new CryptoPP::StringSink(dst), repeat));
+        inflator.reset(new CryptoPP::Inflator(new SequreSink(inflated), repeat));
         break;
     case GZip:
-        inflator.reset(new CryptoPP::Gunzip(new CryptoPP::StringSink(dst), repeat));
+        inflator.reset(new CryptoPP::Gunzip(new SequreSink(inflated), repeat));
         break;
     case ZLib:
-        inflator.reset(new CryptoPP::ZlibDecompressor(new CryptoPP::StringSink(dst), repeat));
+        inflator.reset(new CryptoPP::ZlibDecompressor(new SequreSink(inflated), repeat));
         break;
     default:
         return NotImplemented;
     }
 
     try {
-        data.clear();
-        CryptoPP::StringSource(compressed.toStdString(), true, inflator.take());
-        QByteArray::fromStdString(dst).swap(data);
+        const SequreStr str(data);
+        inflated.reserve(data.size());
+        inflated.resize(0);
+        CryptoPP::StringSource(*str, true, inflator.take());
         return NoError;
     } catch (const std::bad_alloc &exc) {
         return OutOfMemory;

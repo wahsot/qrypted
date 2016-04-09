@@ -17,8 +17,6 @@
 
 #include "qrypto.h"
 
-#include <QStringList>
-
 namespace Qrypto
 {
 
@@ -39,28 +37,28 @@ struct Compress
 
     Algorithm algorithm;
 
-    Compress(Algorithm algorithm = Identity) : algorithm(algorithm) { }
+    Compress(Algorithm algorithm = ZLib) : algorithm(algorithm) { }
 
     Compress(const QString &algorithmName)
     { setAlgorithmName(algorithmName); }
 
     /**
      * @brief deflate data into compressed
-     * @param compressed
-     * @param data
+     * @param deflated result
+     * @param data to defalte
      * @param deflateLevel 0 to 9
      * @return deflation error
      */
-    Error deflate(QByteArray &compressed, const QByteArray &data, int deflateLevel = 6);
+    Error deflate(SequreBytes &deflated, const QByteArray &data, int deflateLevel = 6);
 
     /**
      * @brief inflate data from compressed
-     * @param data
-     * @param compressed
+     * @param inflated result
+     * @param data to inflate
      * @param repeat decompress multiple streams in series
      * @return inflation error
      */
-    Error inflate(QByteArray &data, const QByteArray &compressed, bool repeat = false);
+    Error inflate(SequreBytes &inflated, const QByteArray &data, bool repeat = false);
 
     QString algorithmName() const
     { return AlgorithmNames.at(algorithm); }
