@@ -16,6 +16,7 @@
 
 namespace Qrypto
 {
+
 enum Error {
     NoError,
     NotImplemented,
@@ -25,6 +26,20 @@ enum Error {
     OutOfMemory,
     UnknownError,
 };
+
+/// @include qryptocipher.h
+class Cipher;
+
+/// @include qrypticompress.h
+class Compress;
+
+/// @include qryptokeymaker.h
+class KeyMaker;
+
+/// @include sequre.h
+class SequreStr;
+class SequreBytes;
+class SequreString;
 
 }
 
