@@ -3,6 +3,15 @@
 using namespace Qrypto;
 
 template <class Cls, class Str, typename Len, typename Chr>
+Chr &Sequre<Cls, Str, Len, Chr>::operator[](int id)
+{
+    if (id < 0)
+        return *(s->end() + id);
+    else
+        return *(s->begin() + id);
+}
+
+template <class Cls, class Str, typename Len, typename Chr>
 Cls &Sequre<Cls, Str, Len, Chr>::append(const Str &data)
 {
     resize(s->size() + data.size());
@@ -30,12 +39,12 @@ Cls &Sequre<Cls, Str, Len, Chr>::assign(const Str &data)
 }
 
 template <class Cls, class Str, typename Len, typename Chr>
-Chr &Sequre<Cls, Str, Len, Chr>::at(int id) const
+const Chr &Sequre<Cls, Str, Len, Chr>::at(int id) const
 {
     if (id < 0)
-        return *(s->end() + id);
+        return s->at(s->size() + id);
     else
-        return *(s->begin() + id);
+        return s->at(id);
 }
 
 template <class Cls, class Str, typename Len, typename Chr>
