@@ -43,7 +43,7 @@ public:
 
     explicit Sequre(const Str &str) : s(new Str(str)) { }
 
-    ~Sequre()
+    virtual ~Sequre()
     {
         clear();
         delete s;
@@ -52,7 +52,8 @@ public:
     inline Cls &operator=(const Cls &seq)
     { return assign(*seq); }
 
-    Chr &operator[](int id);
+    inline Chr &operator[](int id) const
+    { return at(id); }
 
     /* you may access the underlying string with these functions, beware of triggering any reallocs */
 
@@ -77,23 +78,23 @@ public:
     inline Cls operator+(const Cls &seq) const
     { return Cls(*this) += seq; }
 
-    Cls &append(const Str &data);
+    virtual Cls &append(const Str &data);
 
-    Cls &append(const Chr *first, const Chr *last);
+    virtual Cls &append(const Chr *first, const Chr *last);
 
-    Cls &assign(const Str &data);
+    virtual Cls &assign(const Str &data);
 
     /**
      * @brief at
      * @param id can be negative, which will index from the end (-1 is the last character)
      * @return
      */
-    const Chr &at(int id) const;
+    virtual Chr &at(int id) const;
 
     inline Len capacity() const
     { return s->capacity(); }
 
-    void clear();
+    virtual void clear();
 
     /**
      * @brief fill all characters to ch
@@ -101,16 +102,16 @@ public:
      * @param size to resize
      * @return
      */
-    Cls &fill(Chr ch, Len size);
+    virtual Cls &fill(Chr ch, Len size);
 
     inline Cls &fill(Chr ch)
     { return fill(ch, s->size()); }
 
-    Cls &prepend(const Str &data);
+    virtual Cls &prepend(const Str &data);
 
-    void reserve(Len capacity);
+    virtual void reserve(Len capacity);
 
-    void resize(Len size);
+    virtual void resize(Len size);
 
     inline Len size() const
     { return s->size(); }
