@@ -1,7 +1,5 @@
 #include "../qryptokeymaker.h"
 
-#include "../sequre.h"
-
 #include <QScopedPointer>
 
 #include <cryptopp/cryptlib.h>
@@ -74,20 +72,17 @@ struct KeyMaker::Private
         CryptoPP::PKCS5_PBKDF2_HMAC<Alg> PBKDF;
 
         try {
-            if (!keyLength)
-                keyLength = key.size();
-
-            if (keyLength)
-                key.resize(std::min(keyLength, PBKDF.MaxDerivedKeyLength()));
-            else
-                throw CryptoPP::InvalidKeyLength("PBKDF", key.size());
+            key.resize(std::min(keyLength, PBKDF.MaxDerivedKeyLength()));
 
             if (salt.isEmpty())
-                salt.resize(Alg::DIGESTSIZE / 2);
+                salt.fill('\0', Alg::DIGESTSIZE / 2); // using resize seems to optimise out the count
 
-            for (const QByteArray zero(salt.size(), '\0'); salt == zero; )
-                CryptoPP::AutoSeededRandomPool().GenerateBlock(reinterpret_cast<byte*>(salt.data()),
-                                                               salt.size());
+            if (salt.count('\0') == salt.size()) {
+                CryptoPP::AutoSeededRandomPool prng;
+
+                for (int zeroes = salt.size(), half = zeroes / 2; zeroes > half; zeroes = salt.count('\0'))
+                    prng.GenerateBlock(reinterpret_cast<byte*>(salt.data()), salt.size());
+            }
 
             iteration = PBKDF.DeriveKey(key.data(), key.size(), 0,
                                         reinterpret_cast<const byte*>(pwData), pwSize,
@@ -185,6 +180,15 @@ QByteArray KeyMaker::authenticate(const char *messageData, uint messageSize, uin
 
 Error KeyMaker::deriveKey(const char *passwordData, uint passwordSize, uint keyLength)
 {
+    if (!passwordData || !passwordSize)
+        return IntegrityError;
+
+    if (!keyLength)
+        keyLength = d->key.size();
+
+    if (!keyLength)
+        return InvalidArgument;
+
     switch (d->algorithm) {
     case RipeMD_160:
         return d->deriveKey<CryptoPP::RIPEMD160>(passwordData, passwordSize, keyLength);

@@ -143,6 +143,7 @@ public:
     /**
      * @brief setSalt would be used for decryption
      * @param salt
+     * @warning a salt value of all zeroes is unusable, key maker will regenerate
      */
     void setSalt(const QByteArray &salt);
 
