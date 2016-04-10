@@ -99,12 +99,12 @@ struct Cipher::Private
             AuthenticatedSymmetricCipher *authentic = dynamic_cast<AuthenticatedSymmetricCipher*>(stream);
             dst.reserve(src.size());
 
-            if (keying->IVSize()) {
+            if (keying->IVRequirement() == SimpleKeyingInterface::NOT_RESYNCHRONIZABLE) {
+                keying->SetKey(keyMaker.keyData(), keyMaker.keyLength());
+            } else {
                 keying->SetKeyWithIV(keyMaker.keyData(), keyMaker.keyLength(),
                                      reinterpret_cast<const byte*>(initialVector.constData()),
                                      initialVector.size());
-            } else {
-                keying->SetKey(keyMaker.keyData(), keyMaker.keyLength());
             }
 
             if (authentic) {
@@ -136,15 +136,16 @@ struct Cipher::Private
             StreamTransformation *stream = dynamic_cast<StreamTransformation*>(cipher);
             AuthenticatedSymmetricCipher *authentic = dynamic_cast<AuthenticatedSymmetricCipher*>(stream);
             str.reserve(src.size());
-            initialVector.resize(keying->IVSize());
 
-            if (keying->IVSize()) {
+            if (keying->IVRequirement() == SimpleKeyingInterface::NOT_RESYNCHRONIZABLE) {
+                initialVector.clear();
+                keying->SetKey(keyMaker.keyData(), keyMaker.keyLength());
+            } else {
                 AutoSeededRandomPool prng;
+                initialVector.resize(keying->IVSize());
                 keying->GetNextIV(prng, reinterpret_cast<byte*>(initialVector.data()));
                 keying->SetKeyWithIV(keyMaker.keyData(), keyMaker.keyLength(),
                                      reinterpret_cast<byte*>(initialVector.data()));
-            } else {
-                keying->SetKey(keyMaker.keyData(), keyMaker.keyLength());
             }
 
             if (authentic) {
@@ -182,7 +183,7 @@ const QStringList Cipher::AlgorithmNames =
                          QString();
 
 const QStringList Cipher::OperationCodes =
-        QStringList() << "CBC" << "CFB" << "CTR" << "ECB" << "EAX" << "GCM" << "OFB" << QString();
+        QStringList() << "CBC" << "CFB" << "CTR" << "EAX" << "ECB" << "GCM" << "OFB" << QString();
 
 Cipher::Cipher(Algorithm algorithm, Operation operation) :
     d(new Private(algorithm, operation))

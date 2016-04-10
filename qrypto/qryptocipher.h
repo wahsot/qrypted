@@ -50,8 +50,8 @@ public:
         CBC,    // Cipher Block Chaining
         CFB,    // Cipher Feedback
         CTR,    // Counter
-        ECB,    // Electronic Codebook
         EAX,    // Encrypt Authenticate Translate
+        ECB,    // Electronic Codebook
         GCM,    // Galois Counter
         OFB,    // Output Feedback
         UnknownOperation
