@@ -1,3 +1,14 @@
+/* Qrypto 2016
+**
+** GNU Lesser General Public License Usage
+** This file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**/
 #ifndef QRYPTO_POINTERATOR_H
 #define QRYPTO_POINTERATOR_H
 
@@ -48,7 +59,7 @@ public:
     unsigned size() const
     { return s; }
 
-    /* Iterator-like API
+    /* Citerator-like API
      * for (Pointerator<T> it(data, size), e = it.end(); it != e; ++it) {
      *   Pointerator<T, Chunk> chunk(*it);
      * }
