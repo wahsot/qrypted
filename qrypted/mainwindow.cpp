@@ -7,7 +7,6 @@
 #include "../qrypto/qrypticstream.h"
 #include "../qrypto/sequre.h"
 
-#include <QBuffer>
 #include <QClipboard>
 #include <QCloseEvent>
 #include <QColorDialog>
@@ -28,13 +27,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QLocale l;
     ui->setupUi(this);
 
-    for (int i = 6; i < 16; ++i)
-        ui->sizeComboBox->addItem(l.toString(i), i);
-
-    for (int i = 16; i < 33; i += 2)
-        ui->sizeComboBox->addItem(l.toString(i), i);
-
     Qrypto::Cipher cipher;
+    Qrypto::KeyMaker keyMaker;
 
     foreach (const QString &name, Qrypto::Cipher::AlgorithmNames) {
         if (!name.isNull())
@@ -46,15 +40,21 @@ MainWindow::MainWindow(QWidget *parent) :
             ui->methodComboBox->addItem(name);
     }
 
+    foreach (const QString &name, Qrypto::KeyMaker::AlgorithmNames) {
+        if (!name.isNull())
+            ui->digestComboBox->addItem(name);
+    }
+
     setWindowTitle(qApp->applicationName());
     ui->actionAbout->setText(ui->actionAbout->text().arg(qApp->applicationName()));
-    ui->sizeComboBox->setCurrentIndex(6);
     ui->formatToolBar->insertWidget(ui->actionBold, ui->fontComboBox);
-    ui->formatToolBar->insertWidget(ui->actionBold, ui->sizeComboBox);
+    ui->formatToolBar->insertWidget(ui->actionBold, ui->fontSpinBox);
     ui->formatToolBar->insertSeparator(ui->actionBold);
     ui->cipherComboBox->setCurrentText(cipher.algorithmName());
+    ui->digestComboBox->setCurrentText(keyMaker.algorithmName());
     ui->methodComboBox->setCurrentText(cipher.operationCode());
     ui->crypToolBar->addWidget(ui->passwordLineEdit);
+    ui->crypToolBar->addWidget(ui->digestComboBox);
     ui->crypToolBar->addWidget(ui->cipherComboBox);
     ui->crypToolBar->addWidget(ui->methodComboBox);
     ui->passwordLineEdit->setInputMethodHints(Qt::ImhNoAutoUppercase | Qt::ImhNoPredictiveText | Qt::ImhSensitiveData);
@@ -63,7 +63,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->searchToolBar->hide();
     ui->textEdit->setFontFamily("monospace");
     ui->textEdit->setFontPointSize(10);
-    ui->textEdit->setTextColor(ui->textEdit->palette().text().color());
+    ui->textEdit->setTextColor(ui->textEdit->textColor());
+    ui->textEdit->document()->setDefaultFont(ui->textEdit->currentFont());
 
     connect(qApp->clipboard(), SIGNAL(dataChanged()),
             this, SLOT(clipboard_dataChanged()));
@@ -211,7 +212,6 @@ bool MainWindow::openFile(const QString &fileName)
         case QryptIO::Ok:
             for (QTextStream stream(*data); !stream.atEnd(); ) {
                 // TODO: handle binary data?
-                const QFileInfo fileInfo(fileName);
                 QAction *recent = 0;
                 QDir::setCurrent(fileInfo.dir().path());
                 ui->textEdit->setText(stream.readAll());
@@ -219,6 +219,7 @@ bool MainWindow::openFile(const QString &fileName)
                 ui->textEdit->setWindowTitle(fileInfo.fileName() + QLatin1String("[*]"));
 
                 if (qryptic.crypticVersion()) {
+                    ui->digestComboBox->setCurrentText(qryptic.keyMaker().algorithmName());
                     ui->cipherComboBox->setCurrentText(qryptic.cipher().algorithmName());
                     ui->methodComboBox->setCurrentText(qryptic.cipher().operationCode());
                     password->setText(*pwd);
@@ -227,16 +228,16 @@ bool MainWindow::openFile(const QString &fileName)
                 }
 
                 if (stream.status() == QTextStream::Ok) {
-                    if (ui->actionRead_Only_Mode->isChecked())
-                        ui->actionRead_Only_Mode->trigger();
+                    if (!fileInfo.isWritable())
+                        stream.setStatus(QTextStream::WriteFailed);
                 } else {
                     QMessageBox::warning(this, tr("Warning"),
                                          tr("The file %1 was opened with %2 encoding but contained invalid characters.")
                                          .arg(fileName), QMessageBox::Close);
-
-                    if (!ui->actionRead_Only_Mode->isChecked())
-                        ui->actionRead_Only_Mode->trigger();
                 }
+
+                if ((stream.status() == QTextStream::Ok) == ui->actionRead_Only_Mode->isChecked())
+                    ui->actionRead_Only_Mode->trigger();
 
                 foreach (QAction *action, ui->menuOpen_Recent->actions()) {
                     const QFileInfo actionInfo(action->toolTip());
@@ -263,7 +264,8 @@ bool MainWindow::openFile(const QString &fileName)
 
             switch (qryptic.error()) {
             case Qrypto::IntegrityError:
-                if (qryptic.status() == QryptIO::CryptographicError) {
+                if (qryptic.status() == QryptIO::KeyDerivationError ||
+                    qryptic.status() == QryptIO::CryptographicError) {
                     bool ok;    // TODO: secure text dialog
                     pwd.assign(QInputDialog::getText(this, pwd->isEmpty()
                                                      ? tr("Enter your password")
@@ -321,17 +323,19 @@ bool MainWindow::saveFile(const QString &fileName)
                                              password->echoMode(), QString(), &ok,
                                              0, Qt::ImhSensitiveData));
 
-            if (!ok)
+            if (ok)
+                password->setText(*pwd);
+            else
                 return false;
         }
 
         qryptic.cipher().setAlgorithmName(ui->cipherComboBox->currentText());
         qryptic.cipher().setOperationCode(ui->methodComboBox->currentText());
+        qryptic.keyMaker().setAlgorithmName(ui->digestComboBox->currentText());
         // TODO: make the following user configurable
-        qryptic.compress().algorithm = Qrypto::Compress::ZLib;
-        qryptic.keyMaker().setAlgorithm(Qrypto::KeyMaker::Sha256);
         qryptic.keyMaker().setIterationTime(500);
         qryptic.keyMaker().setKeyBitSize(512);
+        qryptic.compress().algorithm = Qrypto::Compress::ZLib;
     } else {
         pwd.clear();
     }
@@ -356,11 +360,21 @@ bool MainWindow::saveFile(const QString &fileName)
             break;
         case QryptIO::Ok:
             if (saveFile.commit()) {
+                QAction *recent = 0;
                 QDir::setCurrent(fileInfo.dir().path());
-                ui->textEdit->document()->setMetaInformation(QTextDocument::DocumentUrl, fileInfo.filePath());
+                ui->textEdit->document()->setBaseUrl(QUrl::fromLocalFile(fileInfo.filePath()));
                 ui->textEdit->document()->setModified(false);
                 ui->textEdit->setWindowTitle(fileInfo.fileName() + QLatin1String("[*]"));
-                password->setText(*pwd);
+
+                if (recent) {
+                    ui->menuOpen_Recent->removeAction(recent);
+                } else {
+                    recent = new QAction(fileInfo.fileName(), ui->menuOpen_Recent);
+                    recent->setToolTip(fileInfo.filePath());
+                    recent->setStatusTip(fileInfo.filePath());
+                }
+
+                ui->menuOpen_Recent->insertAction(ui->menuOpen_Recent->actions().at(0), recent);
                 return true; // the only early-exit in the loop
             }
         default:
@@ -389,6 +403,9 @@ void MainWindow::closeEvent(QCloseEvent *event)
             return;
         }
     }
+
+    if (ui->actionFind->isChecked())
+        ui->actionFind->trigger();
 
     const QList<QAction*> recent = ui->menuOpen_Recent->actions();
     QSettings settings;
@@ -500,11 +517,10 @@ void MainWindow::on_actionBold_triggered(bool checked)
 
 void MainWindow::on_actionCensor_triggered(bool checked)
 {
-    if (checked) {
+    if (checked)
         ui->textEdit->setTextBackgroundColor(ui->textEdit->textColor());
-    } else {
+    else
         ui->textEdit->setTextBackgroundColor(Qt::transparent);
-    }
 }
 
 void MainWindow::on_actionFind_Next_triggered()
@@ -536,7 +552,7 @@ void MainWindow::on_actionOpen_triggered()
 {
     openFile(QFileDialog::getOpenFileName(this, trUtf8("Open File — %1").arg(qApp->applicationName()),
                                           QString(),
-                                          tr("Cryptic file (*.xsi);;HTML file (*.html, *.htm);;Text file (*.txt)")));
+                                          tr("Cryptic file (*.xsi);;HTML file (*.html *.htm);;Text file (*.txt)")));
 }
 
 void MainWindow::on_actionOverwrite_Mode_triggered(bool checked)
@@ -564,7 +580,7 @@ void MainWindow::on_actionSave_As_triggered()
     saveFile(QFileDialog::getSaveFileName(this,
                                           trUtf8("Save File — %1").arg(qApp->applicationName()),
                                           QString(),
-                                          tr("Cryptic file (*.xsi);;HTML file (*.html, *.htm);;Text file (*.txt)")));
+                                          tr("Cryptic file (*.xsi);;HTML file (*.html *.htm);;Text file (*.txt)")));
 }
 
 void MainWindow::on_actionSave_triggered()
@@ -622,9 +638,9 @@ void MainWindow::on_actionWord_Wrap_triggered(bool checked)
     ui->textEdit->setWordWrapMode(QTextOption::WrapMode(checked));
 }
 
-void MainWindow::on_sizeComboBox_currentIndexChanged(int id)
+void MainWindow::on_fontSpinBox_valueChanged(int value)
 {
-    ui->textEdit->setFontPointSize(ui->sizeComboBox->itemData(id).toInt());
+    ui->textEdit->setFontPointSize(value);
 }
 
 void MainWindow::on_textEdit_currentCharFormatChanged(const QTextCharFormat &format)
@@ -634,23 +650,22 @@ void MainWindow::on_textEdit_currentCharFormatChanged(const QTextCharFormat &for
     ui->actionItalic->setChecked(format.fontItalic());
     ui->actionUnderline->setChecked(format.fontUnderline());
     ui->fontComboBox->setCurrentFont(format.font());
-
-    for (int i = 0, s = format.fontPointSize() + 0.5; i < ui->sizeComboBox->count(); ++i) {
-        if (ui->sizeComboBox->itemData(i).toInt() == s) {
-            ui->sizeComboBox->setCurrentIndex(i);
-            return;
-        }
-    }
-
-    ui->sizeComboBox->setCurrentText(locale().toString(format.fontPointSize()));
+    ui->fontSpinBox->setValue(format.fontPointSize());
 }
 
 void MainWindow::on_textEdit_cursorPositionChanged()
 {
+    const QTextCursor cursor = ui->textEdit->textCursor();
+    const QTextBlockFormat fmt = cursor.blockFormat();
+    const Qt::Alignment align = fmt.alignment();
+    ui->actionAlign_Center->setChecked(align & Qt::AlignCenter);
+    ui->actionAlign_Left->setChecked(align & Qt::AlignLeft);
+    ui->actionAlign_Right->setChecked(align & Qt::AlignRight);
+
     ui->statusBar->showMessage(tr("%1 : Line %2 : Column %3")
                                .arg(ui->textEdit->document()->baseUrl().toDisplayString())
-                               .arg(ui->textEdit->textCursor().blockNumber() + 1)
-                               .arg(ui->textEdit->textCursor().columnNumber() + 1));
+                               .arg(cursor.blockNumber() + 1)
+                               .arg(cursor.columnNumber() + 1));
 }
 
 void MainWindow::on_textEdit_windowTitleChanged()

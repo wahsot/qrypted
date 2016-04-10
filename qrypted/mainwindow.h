@@ -80,7 +80,7 @@ private slots:
 
     void on_actionWord_Wrap_triggered(bool checked);
 
-    void on_sizeComboBox_currentIndexChanged(int id);
+    void on_fontSpinBox_valueChanged(int value);
 
     void on_textEdit_currentCharFormatChanged(const QTextCharFormat &format);
 

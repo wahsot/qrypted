@@ -20,7 +20,20 @@
      <widget class="QFontComboBox" name="fontComboBox"/>
     </item>
     <item>
-     <widget class="QComboBox" name="sizeComboBox"/>
+     <widget class="QSpinBox" name="fontSpinBox">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimum">
+       <number>6</number>
+      </property>
+      <property name="maximum">
+       <number>72</number>
+      </property>
+     </widget>
     </item>
     <item>
      <widget class="QLineEdit" name="passwordLineEdit">
@@ -42,10 +55,20 @@
      </widget>
     </item>
     <item>
+     <widget class="QComboBox" name="digestComboBox"/>
+    </item>
+    <item>
      <widget class="QComboBox" name="cipherComboBox"/>
     </item>
     <item>
      <widget class="QComboBox" name="methodComboBox"/>
+    </item>
+    <item>
+     <widget class="QTextEdit" name="textEdit">
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOn</enum>
+      </property>
+     </widget>
     </item>
     <item>
      <widget class="QLineEdit" name="findLineEdit">
@@ -57,13 +80,6 @@
       </property>
       <property name="clearButtonEnabled">
        <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QTextEdit" name="textEdit">
-      <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOn</enum>
       </property>
      </widget>
     </item>
@@ -655,7 +671,8 @@
   </action>
   <action name="actionSwitch_Application_Language">
    <property name="icon">
-    <iconset theme="preferences-desktop-locale"/>
+    <iconset theme="preferences-desktop-locale">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Switch Application &amp;Language…</string>
