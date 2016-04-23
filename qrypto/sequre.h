@@ -12,15 +12,14 @@
 #ifndef QRYPTO_SEQURE_H
 #define QRYPTO_SEQURE_H
 
-#include <QString>
+#include <algorithm>
 
 namespace Qrypto
 {
 
-template <class Cls, class Str, typename Len = int, typename Chr = char>
+template <class Str, typename Len = int, typename Chr = char>
 /**
  * @brief The Sequre class sequrely clears memory before any deallocation
- * @param Cls couriouslyrecursive class
  * @param Str string class
  * @param Len size type
  * @param Chr value type
@@ -31,170 +30,167 @@ class Sequre
 
 public:
 
+    typedef Sequre<Str, Len, Chr> Cls;
     typedef Len  size_type;
     typedef Chr  value_type;
-    typedef Chr* iterator;
 
-    Sequre(Str *str = 0) : s(str ? str : new Str) { }
+    Sequre(Str *str = 0) :
+        s(str ? str : new Str)
+    { }
 
-    Sequre(Len size, Chr ch) : s(new Str(size, ch)) { }
+    Sequre(Len size, Chr ch) :
+        s(new Str(size, ch))
+    { }
 
-    Sequre(const Cls &copy) : s(new Str(*copy)) { }
+    explicit Sequre(const Str &str) :
+        s(new Str(str))
+    { }
 
-    explicit Sequre(const Str &str) : s(new Str(str)) { }
+    Sequre(const Cls &copy) :
+        s(new Str(*copy))
+    { }
 
-    virtual ~Sequre()
-    {
-        clear();
-        delete s;
-    }
+    ~Sequre()
+    { delete clear().s; }
 
-    inline Cls &operator=(const Cls &seq)
-    { return assign(*seq); }
+    Cls &operator=(const Cls &str)
+    { return assign(*str); }
 
-    inline Chr &operator[](int id) const
-    { return at(id); }
+    Cls &operator=(const Str &str)
+    { return assign(str); }
 
-    /* you may access the underlying string with these functions, beware of triggering any reallocs */
+    Cls &operator+=(const Cls &str)
+    { return append(*str); }
 
-    inline Str &operator*() const
+    Cls &operator+=(const Str &str)
+    { return append(str); }
+
+    Str &operator*() const
     { return *s; }
 
-    inline Str *operator->() const
+    Str *operator->() const
     { return s; }
 
-    inline Str *string() const
-    { return s; }
+    Chr &operator[](int id)
+    { return *((id < 0 ? s->end() : s->begin()) + id); }
 
-    inline Cls &operator+=(const Str &data)
-    { return append(data); }
+    Cls &append(Chr ch)
+    { return append(&ch, 1); }
 
-    inline Cls &operator+=(const Cls &seq)
-    { return append(*seq); }
+    Cls &append(const Str &str)
+    { return append(str.data(), str.size()); }
 
-    inline Cls operator+(const Str &data) const
-    { return Cls(*this) += data; }
+    Cls &append(const Chr *str, Len size)
+    {
+        if (str && size > 0)
+            std::copy(str, str + size, resize(s->size() + size)->end() - size);
 
-    inline Cls operator+(const Cls &seq) const
-    { return Cls(*this) += seq; }
+        return *this;
+    }
 
-    virtual Cls &append(const Str &data);
+    Cls &assign(const Str &str)
+    {
+        std::copy(str.begin(), str.end(), resize(str.size())->begin());
+        return *this;
+    }
 
-    virtual Cls &append(const Chr *first, const Chr *last);
+    Cls &clear()
+    {
+        for (Len size = fill(0, s->capacity())->size(); size && s->at(size / 2) == Chr(0); size = 0)
+            s->clear(); // the code above should be complex enough to avoid optimisation
 
-    virtual Cls &assign(const Str &data);
+        return *this;
+    }
 
-    /**
-     * @brief at
-     * @param id can be negative, which will index from the end (-1 is the last character)
-     * @return
-     */
-    virtual Chr &at(int id) const;
-
-    inline Len capacity() const
-    { return s->capacity(); }
-
-    virtual void clear();
-
-    /**
-     * @brief fill all characters to ch
-     * @param ch
-     * @param size to resize
-     * @return
-     */
-    virtual Cls &fill(Chr ch, Len size);
-
-    inline Cls &fill(Chr ch)
+    Cls &fill(Chr ch)
     { return fill(ch, s->size()); }
 
-    virtual Cls &prepend(const Str &data);
-
-    virtual void reserve(Len capacity);
-
-    virtual void resize(Len size);
-
-    inline Len size() const
-    { return s->size(); }
-
-};
-
-/**
- * @brief The SequreStr class sequrely wraps std::string
- */
-class SequreStr : public Sequre<SequreStr, std::string, size_t>
-{
-    typedef Sequre<SequreStr, std::string, size_t> super;
-
-public:
-
-    typedef std::string::traits_type traits_type;
-
-    SequreStr(std::string *data = 0);
-
-    SequreStr(size_t size, char ch);
-
-    SequreStr(const SequreStr &copy);
-
-    explicit SequreStr(const std::string &str);
-
-    explicit SequreStr(const QByteArray &str);
-
-    explicit SequreStr(const QString &str);
-
-};
-
-/**
- * @brief The SequreBytes class sequrely wraps QByteArray
- */
-class SequreBytes : public Sequre<SequreBytes, QByteArray>
-{
-    typedef Sequre<SequreBytes, QByteArray> super;
-
-public:
-
-    typedef std::string::traits_type traits_type;
-
-    SequreBytes(QByteArray *data = 0);
-
-    SequreBytes(int size, char ch);
-
-    SequreBytes(const SequreBytes &copy);
-
-    explicit SequreBytes(const QByteArray &str);
-
-    explicit SequreBytes(const QString &str);
-
-    explicit SequreBytes(const std::string &str);
-
-};
-
-/**
- * @brief The SequreString class sequrely wraps QString
- */
-class SequreString : public Sequre<SequreString, QString, int, QChar>
-{
-    typedef Sequre<SequreString, QString, int, QChar> super;
-
-public:
-
-    struct traits_type
+    Cls &fill(Chr ch, Len size)
     {
-        typedef QChar char_type;
-        typedef ushort int_type;
-    };
+        std::fill_n(resize(size)->begin(), size, ch);
+        return *this;
+    }
 
-    SequreString(QString *data = 0);
+    Cls &insert(Len pos, Chr ch)
+    { return insert(pos, &ch, 1); }
 
-    SequreString(int size, QChar ch);
+    Cls &insert(Len pos, const Str &str)
+    { return insert(pos, str.data(), str.size()); }
 
-    SequreString(const SequreString &copy);
+    Cls &insert(Len pos, const Chr *str, Len size)
+    {
+        if (str && size > 0) {
+            resize(s->size() + size);
+            std::copy(str, str + size,
+                      std::copy_backward(s->begin() + pos, s->begin() + (pos + size), s->end()));
+        }
 
-    explicit SequreString(const QString &str);
+        return *this;
+    }
 
-    explicit SequreString(const QByteArray &str);
+    Cls &prepend(Chr ch)
+    { return prepend(&ch, 1); }
 
-    explicit SequreString(const std::string &str);
+    Cls &prepend(const Str &str)
+    { return prepend(str.data(), str.size()); }
 
+    Cls &prepend(const Chr *str, Len size)
+    {
+        if (str && size > 0) {
+            Str t;
+            t.resize(s->size() + size);
+            std::copy(s->begin(), s->end(), std::copy(str, str + size, t.begin()));
+            clear()->swap(t);
+        }
+
+        return *this;
+    }
+
+    Cls &reserve(Len capacity)
+    {
+        if (capacity > s->capacity()) {
+            Str t;
+            t.reserve(capacity);
+            t.resize(s->size());
+            std::copy(s->begin(), s->end(), t.begin());
+            clear()->swap(t);
+        }
+
+        return *this;
+    }
+
+    Cls &resize(Len size)
+    {
+        if (size > s->capacity()) {
+            Str t;
+            t.resize(size);
+            std::copy(s->begin(), s->end(), t.begin());
+            clear()->swap(t);
+        } else {
+            s->resize(size); // assumes no reallocation when resizing within capacity
+        }
+
+        return *this;
+    }
+
+    /* CryptoPP StringSinkTemplate compatibility */
+
+    struct traits_type { typedef Chr char_type; };
+
+    template <class InputIterator>
+    Cls &append(InputIterator first, InputIterator last)
+    {
+        for (Len size = last - first; size; size = 0)
+            std::copy(first, last, resize(s->size() + size)->end() - size);
+
+        return *this;
+    }
+
+    Len capacity() const
+    { return s->capacity(); }
+
+    Len size() const
+    { return s->size(); }
 };
 
 }

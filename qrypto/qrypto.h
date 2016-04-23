@@ -37,9 +37,13 @@ class Compress;
 class KeyMaker;
 
 /// @include sequre.h
-class SequreStr;
-class SequreBytes;
-class SequreString;
+template <class Str, typename Len, typename Chr>
+class Sequre;
+
+typedef Sequre<QByteArray, int, char> SequreBytes;
+typedef Sequre<QString, int, QChar> SequreString;
+typedef Sequre<std::string, size_t, char> SequreStr;
+typedef Sequre<std::vector<uchar>, size_t, uchar> SequreData;
 
 }
 

@@ -252,7 +252,7 @@ QryptIO::Status QryptIO::decrypt(QByteArray &data, const QString &password)
     data.clear();
 
     if (d->isReadable() || !d->crypt.isEmpty()) {
-        Qrypto::SequreBytes sequre(password);
+        Qrypto::SequreBytes sequre(password.toUtf8());
 
         switch (crypticVersion()) {
         case 0: // non-cryptic
@@ -342,7 +342,7 @@ QryptIO::Status QryptIO::encrypt(const QByteArray &data, const QString &password
             if (d->device->write(data) == data.size())
                 d->status = Ok;
         } else {
-            const Qrypto::SequreBytes pwd(password);
+            const Qrypto::SequreBytes pwd(password.toUtf8());
             d->error = d->keyMaker.deriveKey(*pwd, d->cipher.validateKeyLength(d->keyMaker.keyLength()));
 
             if (d->error) {
