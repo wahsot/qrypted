@@ -15,14 +15,20 @@ typedef CryptoPP::StringSinkTemplate<SequreBytes> SequreSink;
 using namespace Qrypto;
 
 const QStringList Compress::AlgorithmNames =
-        QStringList() << "Identity" << "Deflate" << "GZip" << "ZLib" << QString();
+        QStringList() << QString() <<
+                         "Deflate" <<
+                         "GZip" <<
+                         "Identity" <<
+                         QString() <<
+                         "ZLib" <<
+                         QString();
 
 Error Compress::deflate(SequreBytes &deflated, const QByteArray &data, int deflateLevel)
 {
     QScopedPointer<CryptoPP::Deflator> deflator;
     deflateLevel = qBound(0, deflateLevel, 9);
 
-    switch (algorithm) {
+    switch (algorithm()) {
     case Identity:
         deflated.assign(data);
         return NoError;
@@ -40,10 +46,10 @@ Error Compress::deflate(SequreBytes &deflated, const QByteArray &data, int defla
     }
 
     try {
-        const SequreStr str(data);
         deflated.reserve(data.size());
         deflated.resize(0);
-        CryptoPP::StringSource(*str, true, deflator.take());
+        CryptoPP::StringSource(reinterpret_cast<const byte*>(data.constData()), data.size(),
+                               true, deflator.take());
         return NoError;
     } catch (const std::bad_alloc &exc) {
         return OutOfMemory;
@@ -57,7 +63,7 @@ Error Compress::inflate(SequreBytes &inflated, const QByteArray &data, bool repe
 {
     QScopedPointer<CryptoPP::Inflator> inflator;
 
-    switch (algorithm) {
+    switch (algorithm()) {
     case Identity:
         inflated.assign(data);
         return NoError;
@@ -75,10 +81,10 @@ Error Compress::inflate(SequreBytes &inflated, const QByteArray &data, bool repe
     }
 
     try {
-        const SequreStr str(data);
         inflated.reserve(data.size());
         inflated.resize(0);
-        CryptoPP::StringSource(*str, true, inflator.take());
+        CryptoPP::StringSource(reinterpret_cast<const byte*>(data.constData()), data.size(),
+                               true, inflator.take());
         return NoError;
     } catch (const std::bad_alloc &exc) {
         return OutOfMemory;

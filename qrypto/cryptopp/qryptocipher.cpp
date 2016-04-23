@@ -30,22 +30,92 @@ namespace Qrypto
 
 typedef CryptoPP::StringSinkTemplate<SequreBytes> SequreSink;
 
-struct Cipher::Private
+struct Cipher::Impl
 {
-    Cipher::Algorithm algorithm;
-    Cipher::Operation operation;
-    QByteArray authentication;
-    QByteArray initialVector;
+    Cipher *q;
 
-    Private(Cipher::Algorithm algorithm, Cipher::Operation operation) :
-        algorithm(algorithm),
-        operation(operation)
-    { }
+    Impl(Cipher *q = 0) : q(q) { }
+
+    Qrypto::Error decrypt(CryptoPP::Algorithm *cipher, SequreBytes &dst, const QByteArray &src, const KeyMaker &keyMaker)
+    {
+        using namespace CryptoPP;
+        SimpleKeyingInterface *keying = dynamic_cast<SimpleKeyingInterface*>(cipher);
+
+        if (keying->IsValidKeyLength(keyMaker.keyLength())) {
+            QScopedPointer<SequreSink> sink(new SequreSink(dst));
+            StreamTransformation *stream = dynamic_cast<StreamTransformation*>(cipher);
+            AuthenticatedSymmetricCipher *authentic = dynamic_cast<AuthenticatedSymmetricCipher*>(stream);
+            dst.reserve(src.size());
+
+            if (keying->IVRequirement() == SimpleKeyingInterface::NOT_RESYNCHRONIZABLE) {
+                keying->SetKey(keyMaker.keyData(), keyMaker.keyLength());
+            } else {
+                keying->SetKeyWithIV(keyMaker.keyData(), keyMaker.keyLength(),
+                                     reinterpret_cast<const byte*>(q->m_initialVector.constData()),
+                                     q->m_initialVector.size());
+            }
+
+            if (authentic) {
+                StringSource(src.toStdString(), true,
+                             new AuthenticatedDecryptionFilter(*authentic, sink.take()));
+            } else {
+                StringSource(src.toStdString(), true,
+                             new StreamTransformationFilter(*stream, sink.take()));
+
+                if (!q->m_authentication.isEmpty() && keyMaker.authenticate(*dst) != q->m_authentication)
+                    throw HashVerificationFilter::HashVerificationFailed();
+            }
+
+            return NoError;
+        } else {
+            throw InvalidKeyLength(cipher->AlgorithmName(), keyMaker.keyLength());
+        }
+    }
+
+    Qrypto::Error encrypt(CryptoPP::Algorithm *cipher, QByteArray &dst, const SequreBytes &src, const KeyMaker &keyMaker)
+    {
+        using namespace CryptoPP;
+        SimpleKeyingInterface *keying = dynamic_cast<SimpleKeyingInterface*>(cipher);
+
+        if (keying->IsValidKeyLength(keyMaker.keyLength())) {
+            std::string str;
+            QScopedPointer<StringSink> sink(new StringSink(str));
+            StreamTransformation *stream = dynamic_cast<StreamTransformation*>(cipher);
+            AuthenticatedSymmetricCipher *authentic = dynamic_cast<AuthenticatedSymmetricCipher*>(stream);
+            str.reserve(src->size());
+
+            if (keying->IVRequirement() == SimpleKeyingInterface::NOT_RESYNCHRONIZABLE) {
+                q->m_initialVector.clear();
+                keying->SetKey(keyMaker.keyData(), keyMaker.keyLength());
+            } else {
+                AutoSeededRandomPool prng;
+                q->m_initialVector.resize(keying->IVSize());
+                keying->GetNextIV(prng, reinterpret_cast<byte*>(q->m_initialVector.data()));
+                keying->SetKeyWithIV(keyMaker.keyData(), keyMaker.keyLength(),
+                                     reinterpret_cast<byte*>(q->m_initialVector.data()));
+            }
+
+            if (authentic) {
+                StringSource(reinterpret_cast<const byte*>(src->constData()), src->size(), true,
+                             new AuthenticatedEncryptionFilter(*authentic, sink.take()));
+                q->m_authentication.clear();
+            } else {
+                StringSource(reinterpret_cast<const byte*>(src->constData()), src->size(), true,
+                             new StreamTransformationFilter(*stream, sink.take()));
+                q->m_authentication = keyMaker.authenticate(*src);
+            }
+
+            QByteArray::fromStdString(str).swap(dst);
+            return NoError;
+        } else {
+            throw InvalidKeyLength(cipher->AlgorithmName(), keyMaker.keyLength());
+        }
+    }
 
     template <class Alg>
     CryptoPP::StreamTransformation *getDecryption()
     {
-        switch (operation) {
+        switch (q->operation()) {
         case Cipher::CBC:
             return new typename CryptoPP::CBC_Mode<Alg>::Decryption;
         case Cipher::CFB:
@@ -68,7 +138,7 @@ struct Cipher::Private
     template <class Alg>
     CryptoPP::StreamTransformation *getEncryption()
     {
-        switch (operation) {
+        switch (q->operation()) {
         case Cipher::CBC:
             return new typename CryptoPP::CBC_Mode<Alg>::Encryption;
         case Cipher::CFB:
@@ -85,83 +155,6 @@ struct Cipher::Private
             return new typename CryptoPP::OFB_Mode<Alg>::Encryption;
         default:
             return 0;
-        }
-    }
-
-    Qrypto::Error decrypt(CryptoPP::Algorithm *cipher, SequreBytes &dst, const QByteArray &src, const KeyMaker &keyMaker)
-    {
-        using namespace CryptoPP;
-        SimpleKeyingInterface *keying = dynamic_cast<SimpleKeyingInterface*>(cipher);
-
-        if (keying->IsValidKeyLength(keyMaker.keyLength())) {
-            QScopedPointer<SequreSink> sink(new SequreSink(dst));
-            StreamTransformation *stream = dynamic_cast<StreamTransformation*>(cipher);
-            AuthenticatedSymmetricCipher *authentic = dynamic_cast<AuthenticatedSymmetricCipher*>(stream);
-            dst.reserve(src.size());
-
-            if (keying->IVRequirement() == SimpleKeyingInterface::NOT_RESYNCHRONIZABLE) {
-                keying->SetKey(keyMaker.keyData(), keyMaker.keyLength());
-            } else {
-                keying->SetKeyWithIV(keyMaker.keyData(), keyMaker.keyLength(),
-                                     reinterpret_cast<const byte*>(initialVector.constData()),
-                                     initialVector.size());
-            }
-
-            if (authentic) {
-                StringSource(src.toStdString(), true,
-                             new AuthenticatedDecryptionFilter(*authentic, sink.take()));
-            } else {
-                StringSource(src.toStdString(), true,
-                             new StreamTransformationFilter(*stream, sink.take()));
-
-                if (!authentication.isEmpty() && keyMaker.authenticate(*dst) != authentication)
-                    throw HashVerificationFilter::HashVerificationFailed();
-            }
-
-            return NoError;
-        } else {
-            throw InvalidKeyLength(cipher->AlgorithmName(), keyMaker.keyLength());
-        }
-    }
-
-    Qrypto::Error encrypt(CryptoPP::Algorithm *cipher, QByteArray &dst, const SequreBytes &src, const KeyMaker &keyMaker)
-    {
-        using namespace CryptoPP;
-        SimpleKeyingInterface *keying = dynamic_cast<SimpleKeyingInterface*>(cipher);
-
-        if (keying->IsValidKeyLength(keyMaker.keyLength())) {
-            const SequreStr plain(*src);
-            std::string str;
-            QScopedPointer<StringSink> sink(new StringSink(str));
-            StreamTransformation *stream = dynamic_cast<StreamTransformation*>(cipher);
-            AuthenticatedSymmetricCipher *authentic = dynamic_cast<AuthenticatedSymmetricCipher*>(stream);
-            str.reserve(src.size());
-
-            if (keying->IVRequirement() == SimpleKeyingInterface::NOT_RESYNCHRONIZABLE) {
-                initialVector.clear();
-                keying->SetKey(keyMaker.keyData(), keyMaker.keyLength());
-            } else {
-                AutoSeededRandomPool prng;
-                initialVector.resize(keying->IVSize());
-                keying->GetNextIV(prng, reinterpret_cast<byte*>(initialVector.data()));
-                keying->SetKeyWithIV(keyMaker.keyData(), keyMaker.keyLength(),
-                                     reinterpret_cast<byte*>(initialVector.data()));
-            }
-
-            if (authentic) {
-                StringSource(*plain, true,
-                             new AuthenticatedEncryptionFilter(*authentic, sink.take()));
-                authentication.clear();
-            } else {
-                StringSource(*plain, true,
-                             new StreamTransformationFilter(*stream, sink.take()));
-                authentication = keyMaker.authenticate(*src);
-            }
-
-            QByteArray::fromStdString(str).swap(dst);
-            return NoError;
-        } else {
-            throw InvalidKeyLength(cipher->AlgorithmName(), keyMaker.keyLength());
         }
     }
 };
@@ -185,85 +178,48 @@ const QStringList Cipher::AlgorithmNames =
 const QStringList Cipher::OperationCodes =
         QStringList() << "CBC" << "CFB" << "CTR" << "EAX" << "ECB" << "GCM" << "OFB" << QString();
 
-Cipher::Cipher(Algorithm algorithm, Operation operation) :
-    d(new Private(algorithm, operation))
-{ }
-
-Cipher::Cipher(const Cipher &cipher) :
-    d(new Private(*cipher.d))
-{ }
-
-Cipher::Cipher(const QString &algorithmName, const QString &operationCode) :
-    d(new Private(UnknownAlgorithm, UnknownOperation))
-{
-    setAlgorithmName(algorithmName);
-    setOperationCode(operationCode);
-}
-
-Cipher::~Cipher()
-{
-    delete d;
-}
-
-Cipher &Cipher::operator=(const Cipher &cipher)
-{
-    *d = *cipher.d;
-    return *this;
-}
-
-Cipher::Algorithm Cipher::algorithm() const
-{
-    return d->algorithm;
-}
-
-QString Cipher::algorithmName() const
-{
-    return AlgorithmNames.at(d->algorithm);
-}
-
-QByteArray Cipher::authentication() const
-{
-    return d->authentication;
-}
-
 Error Cipher::decrypt(SequreBytes &plain, const QByteArray &crypt, const KeyMaker &keyMaker)
 {
     QScopedPointer<CryptoPP::Algorithm> cipher;
+    Impl f(this);
 
-    switch (d->algorithm) {
+    switch (algorithm()) {
     case AES:
-        cipher.reset(d->getDecryption<CryptoPP::AES>());
+        cipher.reset(f.getDecryption<CryptoPP::AES>());
         break;
     case Blowfish:
-        cipher.reset(d->getDecryption<CryptoPP::Blowfish>());
+        cipher.reset(f.getDecryption<CryptoPP::Blowfish>());
         break;
     case CAST_128:
-        cipher.reset(d->getDecryption<CryptoPP::CAST128>());
+        cipher.reset(f.getDecryption<CryptoPP::CAST128>());
         break;
     case Camellia:
-        cipher.reset(d->getDecryption<CryptoPP::Camellia>());
+        cipher.reset(f.getDecryption<CryptoPP::Camellia>());
         break;
     case DES_EDE3:
-        cipher.reset(d->getDecryption<CryptoPP::DES_EDE3>());
+        cipher.reset(f.getDecryption<CryptoPP::DES_EDE3>());
         break;
     case IDEA:
-        cipher.reset(d->getDecryption<CryptoPP::IDEA>());
+        cipher.reset(f.getDecryption<CryptoPP::IDEA>());
         break;
     case SEED:
-        cipher.reset(d->getDecryption<CryptoPP::SEED>());
+        cipher.reset(f.getDecryption<CryptoPP::SEED>());
         break;
     case Serpent:
-        cipher.reset(d->getDecryption<CryptoPP::Serpent>());
+        cipher.reset(f.getDecryption<CryptoPP::Serpent>());
         break;
     case Twofish:
-        cipher.reset(d->getDecryption<CryptoPP::Twofish>());
+        cipher.reset(f.getDecryption<CryptoPP::Twofish>());
         break;
     default:
-        return NotImplemented;
+        break;
     }
 
+    if (cipher.isNull())
+        return NotImplemented;
+
     try {
-        return d->decrypt(cipher.data(), plain, crypt, keyMaker);
+        return f.decrypt(cipher.data(), plain, crypt, keyMaker);
     } catch (const std::bad_alloc &exc) {
         return OutOfMemory;
     } catch (const CryptoPP::Exception &exc) {
@@ -287,34 +243,35 @@ Error Cipher::decrypt(SequreBytes &plain, const QByteArray &crypt, const KeyMake
 Error Cipher::encrypt(QByteArray &crypt, const SequreBytes &plain, const KeyMaker &keyMaker)
 {
     QScopedPointer<CryptoPP::Algorithm> cipher;
+    Impl f(this);
 
-    switch (d->algorithm) {
+    switch (algorithm()) {
     case AES:
-        cipher.reset(d->getEncryption<CryptoPP::AES>());
+        cipher.reset(f.getEncryption<CryptoPP::AES>());
         break;
     case Blowfish:
-        cipher.reset(d->getEncryption<CryptoPP::Blowfish>());
+        cipher.reset(f.getEncryption<CryptoPP::Blowfish>());
         break;
     case CAST_128:
-        cipher.reset(d->getEncryption<CryptoPP::CAST128>());
+        cipher.reset(f.getEncryption<CryptoPP::CAST128>());
         break;
     case Camellia:
-        cipher.reset(d->getEncryption<CryptoPP::Camellia>());
+        cipher.reset(f.getEncryption<CryptoPP::Camellia>());
         break;
     case DES_EDE3:
-        cipher.reset(d->getEncryption<CryptoPP::DES_EDE3>());
+        cipher.reset(f.getEncryption<CryptoPP::DES_EDE3>());
         break;
     case IDEA:
-        cipher.reset(d->getEncryption<CryptoPP::IDEA>());
+        cipher.reset(f.getEncryption<CryptoPP::IDEA>());
         break;
     case SEED:
-        cipher.reset(d->getEncryption<CryptoPP::SEED>());
+        cipher.reset(f.getEncryption<CryptoPP::SEED>());
         break;
     case Serpent:
-        cipher.reset(d->getEncryption<CryptoPP::Serpent>());
+        cipher.reset(f.getEncryption<CryptoPP::Serpent>());
         break;
     case Twofish:
-        cipher.reset(d->getEncryption<CryptoPP::Twofish>());
+        cipher.reset(f.getEncryption<CryptoPP::Twofish>());
         break;
     default:
         break;
@@ -324,7 +281,7 @@ Error Cipher::encrypt(QByteArray &crypt, const SequreBytes &plain, const KeyMake
         return NotImplemented;
 
     try {
-        return d->encrypt(cipher.data(), crypt, plain, keyMaker);
+        return f.encrypt(cipher.data(), crypt, plain, keyMaker);
     } catch (const std::bad_alloc &exc) {
         return OutOfMemory;
     } catch (const CryptoPP::Exception &exc) {
@@ -341,68 +298,9 @@ Error Cipher::encrypt(QByteArray &crypt, const SequreBytes &plain, const KeyMake
     }
 }
 
-QByteArray Cipher::initialVector() const
-{
-    return d->initialVector;
-}
-
-Cipher::Operation Cipher::operation() const
-{
-    return d->operation;
-}
-
-QString Cipher::operationCode() const
-{
-    return OperationCodes.at(d->operation);
-}
-
-void Cipher::setAlgorithm(Algorithm algorithm)
-{
-    d->algorithm = algorithm;
-}
-
-void Cipher::setAlgorithmName(const QString &algorithmName)
-{
-    for (int i = UnknownAlgorithm; i-- > 0; ) {
-        if (AlgorithmNames.at(i).compare(algorithmName, Qt::CaseInsensitive) == 0) {
-            d->algorithm = Algorithm(i);
-            return;
-        }
-    }
-
-    d->algorithm = UnknownAlgorithm;
-}
-
-void Cipher::setAuthentication(const QByteArray &authentication)
-{
-    d->authentication = authentication;
-}
-
-void Cipher::setInitialVector(const QByteArray &initVector)
-{
-    d->initialVector = initVector;
-}
-
-void Cipher::setOperation(Operation operation)
-{
-    d->operation = operation;
-}
-
-void Cipher::setOperationCode(const QString &operationCode)
-{
-    for (int i = UnknownOperation; i-- > 0; ) {
-        if (OperationCodes.at(i).compare(operationCode, Qt::CaseInsensitive) == 0) {
-            d->operation = Operation(i);
-            return;
-        }
-    }
-
-    d->operation = UnknownOperation;
-}
-
 uint Cipher::validateKeyLength(uint keyLength)
 {
-    switch (d->algorithm) {
+    switch (algorithm()) {
     case AES:
         return CryptoPP::Rijndael_Info::StaticGetValidKeyLength(keyLength);
     case Blowfish:

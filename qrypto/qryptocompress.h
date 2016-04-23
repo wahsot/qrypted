@@ -23,24 +23,29 @@ namespace Qrypto
 /**
  * @brief The Compress class utilises the backend lossless data compression utilities
  */
-struct Compress
+class Compress
 {
+    struct Impl;
+    friend struct Impl;
+
+    QString m_algorithmName;
+
+public:
     enum Algorithm {
-        Identity,
+        Bz2,
         Deflate,
         GZip,
+        Identity,
+        Lzma,
         ZLib,
         UnknownAlgorithm
     };
 
     static const QStringList AlgorithmNames;
 
-    Algorithm algorithm;
-
-    Compress(Algorithm algorithm = ZLib) : algorithm(algorithm) { }
-
-    Compress(const QString &algorithmName)
-    { setAlgorithmName(algorithmName); }
+    Compress(Algorithm algorithm = ZLib) :
+        m_algorithmName(AlgorithmNames.at(algorithm))
+    { }
 
     /**
      * @brief deflate data into compressed
@@ -60,19 +65,28 @@ struct Compress
      */
     Error inflate(SequreBytes &inflated, const QByteArray &data, bool repeat = false);
 
+    Algorithm algorithm() const
+    {
+        for (int i = AlgorithmNames.size(); i-- > 0; ) {
+            if (AlgorithmNames.at(i).compare(m_algorithmName, Qt::CaseInsensitive) == 0)
+                return Algorithm(i);
+        }
+
+        return UnknownAlgorithm;
+    }
+
+    void setAlgorithm(Algorithm algorithm)
+    { m_algorithmName = AlgorithmNames.at(algorithm); }
+
     QString algorithmName() const
-    { return AlgorithmNames.at(algorithm); }
+    { return m_algorithmName; }
 
     void setAlgorithmName(const QString &algorithmName)
     {
-        for (int i = UnknownAlgorithm; i-- > 0; ) {
-            if (AlgorithmNames.at(i).compare(algorithmName, Qt::CaseInsensitive) == 0) {
-                algorithm = Algorithm(i);
-                return;
-            }
-        }
-
-        algorithm = UnknownAlgorithm;
+        if (AlgorithmNames.contains(algorithmName, Qt::CaseInsensitive))
+            m_algorithmName = algorithmName;
+        else
+            m_algorithmName.clear();
     }
 };
 
