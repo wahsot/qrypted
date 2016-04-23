@@ -335,7 +335,7 @@ bool MainWindow::saveFile(const QString &fileName)
         // TODO: make the following user configurable
         qryptic.keyMaker().setIterationTime(500);
         qryptic.keyMaker().setKeyBitSize(512);
-        qryptic.compress().algorithm = Qrypto::Compress::ZLib;
+        qryptic.compress().setAlgorithm(Qrypto::Compress::ZLib);
     } else {
         pwd.clear();
     }
