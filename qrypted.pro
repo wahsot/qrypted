@@ -21,3 +21,11 @@ HEADERS   += $$PWD/qrypted/mainwindow.h \
 FORMS     += $$PWD/qrypted/mainwindow.ui
 
 RESOURCES += $$PWD/qrypted/resource.qrc
+
+TRANSLATIONS += $$PWD/qrypted/translations/qrypted_de.ts \
+                $$PWD/qrypted/translations/qrypted_fr.ts \
+                $$PWD/qrypted/translations/qrypted_en.ts \
+                $$PWD/qrypted/translations/qrypted_es.ts \
+                $$PWD/qrypted/translations/qrypted_ja.ts \
+                $$PWD/qrypted/translations/qrypted_ru.ts \
+                $$PWD/qrypted/translations/qrypted_zh.ts
