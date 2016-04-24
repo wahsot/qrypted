@@ -17,6 +17,8 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    QMenu *m_editMenu;
+
 public:
     static QMultiMap<QString, QTranslator*> getTranslators();
 
@@ -36,9 +38,6 @@ protected:
     void closeEvent(QCloseEvent *event);
 
     void showEvent(QShowEvent *event);
-
-protected slots:
-    void clipboard_dataChanged();
 
 private slots:
     void on_actionAbout_Qt_triggered();

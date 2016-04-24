@@ -30,16 +30,14 @@ QMultiMap<QString, QTranslator*> MainWindow::getTranslators()
         QTranslator *translator = new QTranslator(qApp);
 
         foreach (const QString &dir, QDir::searchPaths("tr")) {
-            // NOTE: simply using QDirIterator it("tr:", … does not work
-            for (QDirIterator it(dir, QStringList("*.qm"), QDir::Files | QDir::Readable);
-                 it.hasNext(); ) {
-                if (translator->load(it.next())) {
-                    const QLocale lc(it.fileName().section('_', 1).section('.', 0, 0));
+            // NOTE: simply using QDir("tr:") does not work,
+            foreach (const QFileInfo &fi, QDir(dir, "*.qm", QDir::Size | QDir::Reversed)
+                     .entryInfoList(QDir::Files | QDir::Readable)) {
+                const QLocale lc(fi.completeBaseName().section('_', 1));
 
-                    if (lc != QLocale::c()) {
-                        translators.insertMulti(lc.name(), translator);
-                        translator = new QTranslator(qApp);
-                    }
+                if (lc != QLocale::c() && translator->load(fi.canonicalFilePath())) {
+                    translators.insertMulti(lc.name(), translator);
+                    translator = new QTranslator(qApp);
                 }
             }
         }
@@ -94,13 +92,14 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->textEdit->setFontPointSize(10);
     ui->textEdit->setTextColor(ui->textEdit->textColor());
     ui->textEdit->document()->setDefaultFont(ui->textEdit->currentFont());
+    m_editMenu = ui->textEdit->createStandardContextMenu();
 
-    connect(qApp->clipboard(), SIGNAL(dataChanged()),
-            this, SLOT(clipboard_dataChanged()));
-    connect(ui->actionCopy, SIGNAL(triggered(bool)),
-            ui->textEdit, SLOT(copy()));
-    connect(ui->actionCut, SIGNAL(triggered(bool)),
-            ui->textEdit, SLOT(cut()));
+    for (QList<QAction*> editActions = m_editMenu->actions(); !editActions.isEmpty(); editActions.clear()) {
+        editActions.last()->setIcon(QIcon::fromTheme(QLatin1String("edit-select-all")));
+        ui->menuEdit->insertActions(ui->menuEdit->actions().at(0), editActions);
+        ui->mainToolBar->addActions(editActions.mid(0, editActions.size() - 3));
+    }
+
     connect(ui->actionEnlarge_Font, SIGNAL(triggered()),
             ui->textEdit, SLOT(zoomIn()));
     connect(ui->actionFormatting_Toolbar, SIGNAL(triggered(bool)),
@@ -109,32 +108,16 @@ MainWindow::MainWindow(QWidget *parent) :
             ui->textEdit, SLOT(setFontItalic(bool)));
     connect(ui->actionMain_Toolbar, SIGNAL(triggered(bool)),
             ui->mainToolBar, SLOT(setVisible(bool)));
-    connect(ui->actionPaste, SIGNAL(triggered(bool)),
-            ui->textEdit, SLOT(paste()));
     connect(ui->actionQuit, SIGNAL(triggered(bool)),
             this, SLOT(close()));
-    connect(ui->actionRedo, SIGNAL(triggered(bool)),
-            ui->textEdit, SLOT(redo()));
-    connect(ui->actionSelect_All, SIGNAL(triggered(bool)),
-            ui->textEdit, SLOT(selectAll()));
     connect(ui->actionShrink_Font, SIGNAL(triggered()),
             ui->textEdit, SLOT(zoomOut()));
     connect(ui->actionUnderline, SIGNAL(triggered(bool)),
             ui->textEdit, SLOT(setFontUnderline(bool)));
-    connect(ui->actionUndo, SIGNAL(triggered(bool)),
-            ui->textEdit, SLOT(undo()));
     connect(ui->findLineEdit, SIGNAL(returnPressed()),
             ui->actionFind_Next, SIGNAL(triggered()));
     connect(ui->fontComboBox, SIGNAL(currentFontChanged(QFont)),
             ui->textEdit, SLOT(setCurrentFont(QFont)));
-    connect(ui->textEdit, SIGNAL(copyAvailable(bool)),
-            ui->actionCopy, SLOT(setEnabled(bool)));
-    connect(ui->textEdit, SIGNAL(copyAvailable(bool)),
-            ui->actionCut, SLOT(setEnabled(bool)));
-    connect(ui->textEdit, SIGNAL(redoAvailable(bool)),
-            ui->actionRedo, SLOT(setEnabled(bool)));
-    connect(ui->textEdit, SIGNAL(undoAvailable(bool)),
-            ui->actionUndo, SLOT(setEnabled(bool)));
     connect(ui->textEdit->document(), SIGNAL(modificationChanged(bool)),
             this, SLOT(setWindowModified(bool)));
 }
@@ -466,7 +449,6 @@ void MainWindow::showEvent(QShowEvent *event)
         restoreGeometry(settings.value("Geometry").toByteArray());
         restoreState(settings.value("State").toByteArray());
         settings.endGroup();
-        clipboard_dataChanged();
 
         for (int i = settings.beginReadArray("Recent Files"); i-- > 0 && recent.size() < 10; ) {
             settings.setArrayIndex(i);
@@ -486,12 +468,6 @@ void MainWindow::showEvent(QShowEvent *event)
         foreach (const QString &arg, qApp->arguments().mid(1))
             openFile(arg);
     }
-}
-
-void MainWindow::clipboard_dataChanged()
-{
-    const QMimeData *mime = qApp->clipboard()->mimeData();
-    ui->actionPaste->setEnabled(mime && (mime->hasHtml() || mime->hasText()));
 }
 
 void MainWindow::on_actionAbout_Qt_triggered()
@@ -651,11 +627,20 @@ void MainWindow::on_actionSwitch_Application_Language_triggered()
         foreach (QTranslator *tr, translators.values(lc.name()))
             qApp->installTranslator(tr);
 
-        QLocale::setDefault(lc);
-        ui->retranslateUi(this);
         QMessageBox::information(this, tr("Application Language Changed"),
                                  tr("The language for this application has been changed."
                                     "The change will take effect the next time the application is started."));
+
+        QLocale::setDefault(lc);
+        ui->retranslateUi(this);
+        m_editMenu->deleteLater();
+        m_editMenu = ui->textEdit->createStandardContextMenu();
+
+        for (QList<QAction*> editActions = m_editMenu->actions(); !editActions.isEmpty(); editActions.clear()) {
+            editActions.last()->setIcon(QIcon::fromTheme(QLatin1String("edit-select-all")));
+            ui->menuEdit->insertActions(ui->menuEdit->actions().at(0), editActions);
+            ui->mainToolBar->addActions(editActions.mid(0, editActions.size() - 3));
+        }
     }
 }
 
