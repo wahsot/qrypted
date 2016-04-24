@@ -2,27 +2,27 @@
 
 #include <QApplication>
 #include <QDir>
+#include <QLibraryInfo>
 #include <QSettings>
 #include <QTranslator>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    QTranslator tr;
     a.setApplicationName("Qrypted");
     a.setApplicationVersion("2016.0410");
     a.setOrganizationDomain("qrypted.org");
     a.setOrganizationName("Qrypted");
+    QDir::addSearchPath("tr", a.applicationDirPath() + QLatin1String("/../share/translations"));
+    QDir::addSearchPath("tr", QLibraryInfo::location(QLibraryInfo::TranslationsPath));
 
     for (QSettings settings; settings.isWritable(); ) {
-        QVariant ln = settings.value("Language");
+        for (QLocale lc(settings.value("Language").toString()); lc != QLocale::c(); ) {
+            foreach (QTranslator *tr, MainWindow::getTranslators().values(lc.name()))
+                qApp->installTranslator(tr);
 
-        for (QLocale lc(ln.toLocale()); ln.type() == QVariant::Locale; ln.clear()) {
             QLocale::setDefault(lc);
-            QDir dir(a.applicationDirPath());
-            dir.cd("../share/translations") && \
-            tr.load(lc, a.applicationName().toLower(), ".", dir.canonicalPath()) && \
-            a.installTranslator(&tr);
+            break;
         }
         break;
     }

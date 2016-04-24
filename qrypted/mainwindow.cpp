@@ -10,6 +10,7 @@
 #include <QClipboard>
 #include <QCloseEvent>
 #include <QColorDialog>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileDialog>
 #include <QInputDialog>
@@ -19,6 +20,35 @@
 #include <QSaveFile>
 #include <QSettings>
 #include <QTextStream>
+#include <QTranslator>
+
+QMultiMap<QString, QTranslator*> MainWindow::getTranslators()
+{
+    static QMultiMap<QString, QTranslator*> translators;
+
+    if (translators.isEmpty()) {
+        QTranslator *translator = new QTranslator(qApp);
+
+        foreach (const QString &dir, QDir::searchPaths("tr")) {
+            // NOTE: simply using QDirIterator it("tr:", … does not work
+            for (QDirIterator it(dir, QStringList("*.qm"), QDir::Files | QDir::Readable);
+                 it.hasNext(); ) {
+                if (translator->load(it.next())) {
+                    const QLocale lc(it.fileName().section('_', 1).section('.', 0, 0));
+
+                    if (lc != QLocale::c()) {
+                        translators.insertMulti(lc.name(), translator);
+                        translator = new QTranslator(qApp);
+                    }
+                }
+            }
+        }
+
+        translator->deleteLater();
+    }
+
+    return translators;
+}
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -46,7 +76,6 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     setWindowTitle(qApp->applicationName());
-    ui->actionAbout->setText(ui->actionAbout->text().arg(qApp->applicationName()));
     ui->formatToolBar->insertWidget(ui->actionBold, ui->fontComboBox);
     ui->formatToolBar->insertWidget(ui->actionBold, ui->fontSpinBox);
     ui->formatToolBar->insertSeparator(ui->actionBold);
@@ -552,7 +581,8 @@ void MainWindow::on_actionOpen_triggered()
 {
     openFile(QFileDialog::getOpenFileName(this, trUtf8("Open File — %1").arg(qApp->applicationName()),
                                           QString(),
-                                          tr("Cryptic file (*.xsi);;HTML file (*.html *.htm);;Text file (*.txt)")));
+                                          tr("Cryptic file (*.xsi);;HTML file (*.html *.htm);;Text file (*.txt)"),
+                                          0, QFileDialog::DontUseNativeDialog));
 }
 
 void MainWindow::on_actionOverwrite_Mode_triggered(bool checked)
@@ -580,7 +610,8 @@ void MainWindow::on_actionSave_As_triggered()
     saveFile(QFileDialog::getSaveFileName(this,
                                           trUtf8("Save File — %1").arg(qApp->applicationName()),
                                           QString(),
-                                          tr("Cryptic file (*.xsi);;HTML file (*.html *.htm);;Text file (*.txt)")));
+                                          tr("Cryptic file (*.xsi);;HTML file (*.html *.htm);;Text file (*.txt)"),
+                                          0, QFileDialog::DontUseNativeDialog));
 }
 
 void MainWindow::on_actionSave_triggered()
@@ -595,20 +626,33 @@ void MainWindow::on_actionSave_triggered()
 
 void MainWindow::on_actionSwitch_Application_Language_triggered()
 {
+    const QMultiMap<QString, QTranslator*> translators = getTranslators();
+    const QLocale current;
+    QMap<QString, QString> languages;
     bool ok;
-    const QString current = QLocale::languageToString(locale().language());
-    QStringList languages;
-    languages << QLocale::languageToString(QLocale::English) <<
-                 QLocale::languageToString(QLocale::German) <<
-                 QLocale::languageToString(QLocale::Spanish) <<
-                 QLocale::languageToString(QLocale::French);
 
-    for (QString l = QInputDialog::getItem(this,
-                                           ui->actionSwitch_Application_Language->toolTip(),
-                                           tr("Language"), languages, languages.indexOf(current),
-                                           false, &ok);
-         ok && l != current; l = current) {
-        QLocale::setDefault(QLocale(languages.takeLast()));
+    foreach (const QString &name, translators.uniqueKeys())
+        languages[QLocale(name).nativeLanguageName()] = name;
+
+    QString l = QInputDialog::getItem(this,
+                                      ui->actionSwitch_Application_Language->toolTip(),
+                                      tr("Language"), languages.keys(),
+                                      languages.keys().indexOf(current.nativeLanguageName()),
+                                      false, &ok);
+
+    if (ok && current.nativeLanguageName() != l) {
+        const QLocale lc(languages.value(l));
+        QSettings settings;
+        settings.setValue(QLatin1String("Language"), lc.name());
+
+        foreach (QTranslator *tr, translators.values(current.name()))
+            qApp->removeTranslator(tr);
+
+        foreach (QTranslator *tr, translators.values(lc.name()))
+            qApp->installTranslator(tr);
+
+        QLocale::setDefault(lc);
+        ui->retranslateUi(this);
         QMessageBox::information(this, tr("Application Language Changed"),
                                  tr("The language for this application has been changed."
                                     "The change will take effect the next time the application is started."));
@@ -618,7 +662,7 @@ void MainWindow::on_actionSwitch_Application_Language_triggered()
 void MainWindow::on_actionText_Color_triggered()
 {
     const QColor c = QColorDialog::getColor(ui->textEdit->textColor(), this,
-                                            trUtf8("Select Color — %1").arg(qApp->applicationName()));
+                                            trUtf8("Select Colour — %1").arg(qApp->applicationName()));
 
     if (c.isValid())
         ui->textEdit->setTextColor(c);
@@ -627,7 +671,7 @@ void MainWindow::on_actionText_Color_triggered()
 void MainWindow::on_actionText_Highlight_triggered()
 {
     const QColor c = QColorDialog::getColor(ui->textEdit->textBackgroundColor(), this,
-                                            trUtf8("Select Color — %1").arg(qApp->applicationName()));
+                                            trUtf8("Select Colour — %1").arg(qApp->applicationName()));
 
     if (c.isValid())
         ui->textEdit->setTextBackgroundColor(c);

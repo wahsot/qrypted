@@ -5,6 +5,7 @@
 
 class QFileDevice;
 class QTextCharFormat;
+class QTranslator;
 
 class QryptIO;
 
@@ -17,6 +18,8 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
+    static QMultiMap<QString, QTranslator*> getTranslators();
+
     explicit MainWindow(QWidget *parent = 0);
 
     ~MainWindow();
