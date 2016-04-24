@@ -24,500 +24,440 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="144"/>
-        <source>He&amp;lp</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="153"/>
+        <location filename="../mainwindow.ui" line="145"/>
         <source>Fo&amp;rmat</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="169"/>
+        <location filename="../mainwindow.ui" line="161"/>
         <source>&amp;View</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="208"/>
-        <location filename="../mainwindow.ui" line="230"/>
-        <location filename="../mainwindow.ui" line="247"/>
+        <location filename="../mainwindow.ui" line="194"/>
+        <location filename="../mainwindow.ui" line="216"/>
+        <location filename="../mainwindow.ui" line="233"/>
         <source>toolBar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="262"/>
+        <location filename="../mainwindow.ui" line="248"/>
         <source>&amp;New</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="265"/>
+        <location filename="../mainwindow.ui" line="251"/>
         <source>Ctrl+N</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="274"/>
+        <location filename="../mainwindow.ui" line="260"/>
         <source>&amp;Open…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="277"/>
+        <location filename="../mainwindow.ui" line="263"/>
         <source>Ctrl+O</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="286"/>
+        <location filename="../mainwindow.ui" line="272"/>
         <source>&amp;Save</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="289"/>
+        <location filename="../mainwindow.ui" line="275"/>
         <source>Ctrl+S</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="298"/>
+        <location filename="../mainwindow.ui" line="284"/>
         <source>&amp;Quit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="301"/>
+        <location filename="../mainwindow.ui" line="287"/>
         <source>Ctrl+Q</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="313"/>
-        <source>&amp;Undo</source>
+        <location filename="../mainwindow.ui" line="136"/>
+        <source>&amp;Help</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="316"/>
-        <source>Ctrl+Z</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="328"/>
-        <source>&amp;Redo</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="331"/>
-        <source>Ctrl+Shift+Z</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="343"/>
-        <source>Cu&amp;t</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="346"/>
-        <source>Ctrl+X</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="358"/>
-        <source>&amp;Copy</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="361"/>
-        <source>Ctrl+C</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="370"/>
-        <source>&amp;Paste</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="373"/>
-        <source>Ctrl+V</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="382"/>
-        <source>Select &amp;All</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="385"/>
-        <source>Ctrl+A</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../mainwindow.ui" line="397"/>
+        <location filename="../mainwindow.ui" line="299"/>
         <source>&amp;Bold</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="400"/>
+        <location filename="../mainwindow.ui" line="302"/>
         <source>Ctrl+B</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="412"/>
+        <location filename="../mainwindow.ui" line="314"/>
         <source>&amp;Italic</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="415"/>
+        <location filename="../mainwindow.ui" line="317"/>
         <source>Ctrl+I</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="427"/>
+        <location filename="../mainwindow.ui" line="329"/>
         <source>&amp;Underline</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="430"/>
+        <location filename="../mainwindow.ui" line="332"/>
         <source>Ctrl+U</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="435"/>
+        <location filename="../mainwindow.ui" line="337"/>
         <source>About &amp;Qt</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="447"/>
+        <location filename="../mainwindow.ui" line="349"/>
         <source>&amp;Find</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="450"/>
+        <location filename="../mainwindow.ui" line="352"/>
         <source>Ctrl+F</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="459"/>
+        <location filename="../mainwindow.ui" line="361"/>
         <source>Save &amp;As…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="468"/>
+        <location filename="../mainwindow.ui" line="370"/>
         <source>&amp;Enlarge Font</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="471"/>
+        <location filename="../mainwindow.ui" line="373"/>
         <source>Ctrl++</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="480"/>
+        <location filename="../mainwindow.ui" line="382"/>
         <source>&amp;Shrink Font</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="483"/>
+        <location filename="../mainwindow.ui" line="385"/>
         <source>Ctrl+-</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="494"/>
+        <location filename="../mainwindow.ui" line="396"/>
         <source>&amp;Word Wrap</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="497"/>
+        <location filename="../mainwindow.ui" line="399"/>
         <source>F10</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="505"/>
+        <location filename="../mainwindow.ui" line="407"/>
         <source>&amp;Read Only Mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="513"/>
+        <location filename="../mainwindow.ui" line="415"/>
         <source>&amp;Overwrite Mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="516"/>
+        <location filename="../mainwindow.ui" line="418"/>
         <source>Ins</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="525"/>
-        <source>&amp;About %1</source>
+        <location filename="../mainwindow.ui" line="427"/>
+        <source>&amp;About Qrypted</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="537"/>
+        <location filename="../mainwindow.ui" line="439"/>
         <source>Find &amp;Next</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="540"/>
+        <location filename="../mainwindow.ui" line="442"/>
         <source>F3</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="552"/>
+        <location filename="../mainwindow.ui" line="454"/>
         <source>F&amp;ind Previous</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="555"/>
+        <location filename="../mainwindow.ui" line="457"/>
         <source>Shift+F3</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="566"/>
+        <location filename="../mainwindow.ui" line="468"/>
         <source>&amp;Main Toolbar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="577"/>
+        <location filename="../mainwindow.ui" line="479"/>
         <source>&amp;Formatting Toolbar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="582"/>
+        <location filename="../mainwindow.ui" line="484"/>
         <source>&amp;Text Color…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="587"/>
+        <location filename="../mainwindow.ui" line="489"/>
         <source>Text &amp;Highlight…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="602"/>
+        <location filename="../mainwindow.ui" line="504"/>
         <source>Align &amp;Left</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="614"/>
+        <location filename="../mainwindow.ui" line="516"/>
         <source>Align &amp;Center</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="626"/>
+        <location filename="../mainwindow.ui" line="528"/>
         <source>Align &amp;Right</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="638"/>
+        <location filename="../mainwindow.ui" line="540"/>
         <source>C&amp;ensor</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="641"/>
+        <location filename="../mainwindow.ui" line="543"/>
         <source>Ctrl+E</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="650"/>
+        <location filename="../mainwindow.ui" line="552"/>
         <source>&amp;Reload</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="653"/>
+        <location filename="../mainwindow.ui" line="555"/>
         <source>F5</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="664"/>
+        <location filename="../mainwindow.ui" line="566"/>
         <source>E&amp;ncryption Toolbar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="669"/>
+        <location filename="../mainwindow.ui" line="571"/>
         <source>Clear &amp;List</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.ui" line="678"/>
+        <location filename="../mainwindow.ui" line="580"/>
         <source>Switch Application &amp;Language…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="122"/>
+        <location filename="../mainwindow.cpp" line="134"/>
         <source>An error occurred while reading from the file.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="124"/>
+        <location filename="../mainwindow.cpp" line="136"/>
         <source>An error occurred while writing to the file.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="126"/>
+        <location filename="../mainwindow.cpp" line="138"/>
         <source>The file could not be accessed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="128"/>
+        <location filename="../mainwindow.cpp" line="140"/>
         <source>The file could not be opened.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="130"/>
+        <location filename="../mainwindow.cpp" line="142"/>
         <source>A resource error occurred.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="132"/>
+        <location filename="../mainwindow.cpp" line="144"/>
         <source>A fatal error occurred.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="144"/>
+        <location filename="../mainwindow.cpp" line="156"/>
         <source>key derivation</source>
         <comment>This word will be used in the error sentence.</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="148"/>
+        <location filename="../mainwindow.cpp" line="160"/>
         <source>encryption</source>
         <comment>This word will be used in the error sentence.</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="150"/>
+        <location filename="../mainwindow.cpp" line="162"/>
         <source>decryption</source>
         <comment>This word will be used in the error sentence.</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="154"/>
+        <location filename="../mainwindow.cpp" line="166"/>
         <source>compression</source>
         <comment>This word will be used in the error sentence.</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="164"/>
+        <location filename="../mainwindow.cpp" line="176"/>
         <source>Unknown %1 algorithm.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="166"/>
+        <location filename="../mainwindow.cpp" line="178"/>
         <source>Unsupported %1 parameters.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="168"/>
+        <location filename="../mainwindow.cpp" line="180"/>
         <source>%1 data integrity test failed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="170"/>
+        <location filename="../mainwindow.cpp" line="182"/>
         <source>%1 memory allocation failed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="172"/>
+        <location filename="../mainwindow.cpp" line="184"/>
         <source>Invalid %1 format.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="174"/>
+        <location filename="../mainwindow.cpp" line="186"/>
         <source>An unknown %1 error occurred.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="206"/>
+        <location filename="../mainwindow.cpp" line="218"/>
         <source>Unsupported file version.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="208"/>
+        <location filename="../mainwindow.cpp" line="220"/>
         <source>Invalid file format.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="234"/>
+        <location filename="../mainwindow.cpp" line="246"/>
         <source>Warning</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="235"/>
+        <location filename="../mainwindow.cpp" line="247"/>
         <source>The file %1 was opened with %2 encoding but contained invalid characters.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="271"/>
-        <location filename="../mainwindow.cpp" line="321"/>
+        <location filename="../mainwindow.cpp" line="283"/>
+        <location filename="../mainwindow.cpp" line="333"/>
         <source>Enter your password</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="272"/>
+        <location filename="../mainwindow.cpp" line="284"/>
         <source>Hash test failed. The password is wrong or the file is damaged.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="291"/>
-        <location filename="../mainwindow.cpp" line="387"/>
+        <location filename="../mainwindow.cpp" line="303"/>
+        <location filename="../mainwindow.cpp" line="399"/>
         <source>Error — %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="397"/>
+        <location filename="../mainwindow.cpp" line="409"/>
         <source>Close — %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="398"/>
+        <location filename="../mainwindow.cpp" line="410"/>
         <source>The document %1 has been modified.
 Do you want to save your changes or discard them?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="435"/>
+        <location filename="../mainwindow.cpp" line="447"/>
         <source>Untitled</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="476"/>
+        <location filename="../mainwindow.cpp" line="481"/>
         <source>%1 — Qt Cryptic Text Editor
 Version %2
 Vasthu Syahbani</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="553"/>
+        <location filename="../mainwindow.cpp" line="558"/>
         <source>Open File — %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="555"/>
-        <location filename="../mainwindow.cpp" line="583"/>
+        <location filename="../mainwindow.cpp" line="560"/>
+        <location filename="../mainwindow.cpp" line="589"/>
         <source>Cryptic file (*.xsi);;HTML file (*.html *.htm);;Text file (*.txt)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="581"/>
+        <location filename="../mainwindow.cpp" line="587"/>
         <source>Save File — %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="608"/>
+        <location filename="../mainwindow.cpp" line="615"/>
         <source>Language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="612"/>
+        <location filename="../mainwindow.cpp" line="630"/>
         <source>Application Language Changed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="613"/>
+        <location filename="../mainwindow.cpp" line="631"/>
         <source>The language for this application has been changed.The change will take effect the next time the application is started.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="621"/>
-        <location filename="../mainwindow.cpp" line="630"/>
-        <source>Select Color — %1</source>
+        <location filename="../mainwindow.cpp" line="650"/>
+        <location filename="../mainwindow.cpp" line="659"/>
+        <source>Select Colour — %1</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../mainwindow.cpp" line="665"/>
+        <location filename="../mainwindow.cpp" line="694"/>
         <source>%1 : Line %2 : Column %3</source>
         <translation type="unfinished"></translation>
     </message>
