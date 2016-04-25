@@ -88,7 +88,7 @@
     <message>
         <location filename="../mainwindow.ui" line="303"/>
         <source>&amp;Bold</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Gras</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="306"/>
@@ -98,7 +98,7 @@
     <message>
         <location filename="../mainwindow.ui" line="318"/>
         <source>&amp;Italic</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Italique</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="321"/>
@@ -108,7 +108,7 @@
     <message>
         <location filename="../mainwindow.ui" line="333"/>
         <source>&amp;Underline</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Souligné</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="336"/>
@@ -183,7 +183,7 @@
     <message>
         <location filename="../mainwindow.ui" line="431"/>
         <source>&amp;About Qrypted</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Àpropos de Qrypted</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="443"/>
@@ -212,8 +212,8 @@
     </message>
     <message>
         <location filename="../mainwindow.ui" line="483"/>
-        <source>&amp;Formatting Toolbar</source>
-        <translation type="unfinished"></translation>
+        <source>&amp;Style Toolbar</source>
+        <translation>Barre &amp;style d&apos;outils</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="488"/>
@@ -298,12 +298,12 @@
     <message>
         <location filename="../mainwindow.cpp" line="137"/>
         <source>A resource error occurred.</source>
-        <translation type="unfinished"></translation>
+        <translation>Une erreur de ressource est survenue.</translation>
     </message>
     <message>
         <location filename="../mainwindow.cpp" line="139"/>
         <source>A fatal error occurred.</source>
-        <translation type="unfinished"></translation>
+        <translation>Une erreur fatale est survenue.</translation>
     </message>
     <message>
         <location filename="../mainwindow.cpp" line="151"/>
@@ -327,7 +327,7 @@
         <location filename="../mainwindow.cpp" line="161"/>
         <source>compression</source>
         <comment>This word will be used in the error sentence.</comment>
-        <translation type="unfinished"></translation>
+        <translation>compressés</translation>
     </message>
     <message>
         <location filename="../mainwindow.cpp" line="171"/>
@@ -388,7 +388,7 @@
     <message>
         <location filename="../mainwindow.cpp" line="272"/>
         <source>Hash test failed. The password is wrong or the file is damaged.</source>
-        <translation type="unfinished"></translation>
+        <translation>Le test de hachage a échoué. Le mot de passe est mauvaise ou le fichier est endommagé.</translation>
     </message>
     <message>
         <location filename="../mainwindow.cpp" line="291"/>
@@ -455,7 +455,7 @@ Vasthu Syahbani</source>
         <location filename="../mainwindow.cpp" line="657"/>
         <location filename="../mainwindow.cpp" line="666"/>
         <source>Select Colour — %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Choisir une couleur — %1</translation>
     </message>
     <message>
         <location filename="../mainwindow.cpp" line="717"/>

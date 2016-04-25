@@ -480,7 +480,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>&amp;Formatting Toolbar</string>
+    <string>&amp;Style Toolbar</string>
    </property>
   </action>
   <action name="actionText_Color">

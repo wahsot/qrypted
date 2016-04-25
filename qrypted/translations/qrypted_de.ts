@@ -83,12 +83,12 @@
     <message>
         <location filename="../mainwindow.ui" line="149"/>
         <source>&amp;Style</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Stile</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="303"/>
         <source>&amp;Bold</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Fett</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="306"/>
@@ -98,7 +98,7 @@
     <message>
         <location filename="../mainwindow.ui" line="318"/>
         <source>&amp;Italic</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Kursiv</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="321"/>
@@ -108,7 +108,7 @@
     <message>
         <location filename="../mainwindow.ui" line="333"/>
         <source>&amp;Underline</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Unterstrichen</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="336"/>
@@ -212,8 +212,8 @@
     </message>
     <message>
         <location filename="../mainwindow.ui" line="483"/>
-        <source>&amp;Formatting Toolbar</source>
-        <translation type="unfinished"></translation>
+        <source>&amp;Style Toolbar</source>
+        <translation>&amp;Stilewerkzeugliste</translation>
     </message>
     <message>
         <location filename="../mainwindow.ui" line="488"/>
@@ -455,7 +455,7 @@ Vasthu Syahbani</source>
         <location filename="../mainwindow.cpp" line="657"/>
         <location filename="../mainwindow.cpp" line="666"/>
         <source>Select Colour — %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Farbe auswählen — %1</translation>
     </message>
     <message>
         <location filename="../mainwindow.cpp" line="717"/>

@@ -212,7 +212,7 @@
     </message>
     <message>
         <location filename="../mainwindow.ui" line="483"/>
-        <source>&amp;Formatting Toolbar</source>
+        <source>&amp;Style Toolbar</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
