@@ -10,20 +10,23 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     a.setApplicationName("Qrypted");
-    a.setApplicationVersion("2016.0410");
+    a.setApplicationVersion("2016.0425");
     a.setOrganizationDomain("qrypted.org");
     a.setOrganizationName("Qrypted");
     QDir::addSearchPath("tr", a.applicationDirPath() + QLatin1String("/../share/translations"));
     QDir::addSearchPath("tr", QLibraryInfo::location(QLibraryInfo::TranslationsPath));
 
     for (QSettings settings; settings.isWritable(); ) {
-        for (QLocale lc(settings.value("Language").toString()); lc != QLocale::c(); ) {
-            foreach (QTranslator *tr, MainWindow::getTranslators().values(lc.name()))
-                qApp->installTranslator(tr);
+        QLocale lc(settings.value("Language").toString());
 
+        if (lc == QLocale::c())
+            lc = QLocale::system();
+        else
             QLocale::setDefault(lc);
-            break;
-        }
+
+        foreach (QTranslator *tr, MainWindow::getTranslators().values(lc.name()))
+            qApp->installTranslator(tr);
+
         break;
     }
 
