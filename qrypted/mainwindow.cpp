@@ -35,7 +35,7 @@ QMultiMap<QString, QTranslator*> MainWindow::getTranslators()
                      .entryInfoList(QDir::Files | QDir::Readable)) {
                 const QLocale lc(fi.completeBaseName().section('_', 1));
 
-                if (lc != QLocale::c() && translator->load(fi.canonicalFilePath())) {
+                if (lc != QLocale::c() && translator->load(fi.completeBaseName(), dir)) {
                     translators.insertMulti(lc.name(), translator);
                     translator = new QTranslator(qApp);
                 }
@@ -52,7 +52,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    QLocale l;
     ui->setupUi(this);
 
     Qrypto::Cipher cipher;
@@ -73,6 +72,7 @@ MainWindow::MainWindow(QWidget *parent) :
             ui->digestComboBox->addItem(name);
     }
 
+    loadEditMenu();
     setWindowTitle(qApp->applicationName());
     ui->formatToolBar->insertWidget(ui->actionBold, ui->fontComboBox);
     ui->formatToolBar->insertWidget(ui->actionBold, ui->fontSpinBox);
@@ -92,13 +92,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->textEdit->setFontPointSize(10);
     ui->textEdit->setTextColor(ui->textEdit->textColor());
     ui->textEdit->document()->setDefaultFont(ui->textEdit->currentFont());
-    m_editMenu = ui->textEdit->createStandardContextMenu();
-
-    for (QList<QAction*> editActions = m_editMenu->actions(); !editActions.isEmpty(); editActions.clear()) {
-        editActions.last()->setIcon(QIcon::fromTheme(QLatin1String("edit-select-all")));
-        ui->menuEdit->insertActions(ui->menuEdit->actions().at(0), editActions);
-        ui->mainToolBar->addActions(editActions.mid(0, editActions.size() - 3));
-    }
 
     connect(ui->actionEnlarge_Font, SIGNAL(triggered()),
             ui->textEdit, SLOT(zoomIn()));
@@ -118,6 +111,8 @@ MainWindow::MainWindow(QWidget *parent) :
             ui->actionFind_Next, SIGNAL(triggered()));
     connect(ui->fontComboBox, SIGNAL(currentFontChanged(QFont)),
             ui->textEdit, SLOT(setCurrentFont(QFont)));
+    connect(ui->textEdit->document(), SIGNAL(baseUrlChanged(QUrl)),
+            this, SLOT(textDocument_baseUrlChanged(QUrl)));
     connect(ui->textEdit->document(), SIGNAL(modificationChanged(bool)),
             this, SLOT(setWindowModified(bool)));
 }
@@ -187,6 +182,17 @@ QString MainWindow::getErrorString(const QryptIO &qryptic) const
     }
 }
 
+void MainWindow::loadEditMenu()
+{
+    m_editMenu = ui->textEdit->createStandardContextMenu();
+
+    for (QList<QAction*> editActions = m_editMenu->actions(); !editActions.isEmpty(); editActions.clear()) {
+        editActions.last()->setIcon(QIcon::fromTheme(QLatin1String("edit-select-all")));
+        ui->menuEdit->insertActions(ui->menuEdit->actions().at(0), editActions);
+        ui->mainToolBar->addActions(editActions.mid(0, editActions.size() - 3));
+    }
+}
+
 bool MainWindow::openFile(const QString &fileName)
 {
     if (fileName.isEmpty())
@@ -224,11 +230,9 @@ bool MainWindow::openFile(const QString &fileName)
         case QryptIO::Ok:
             for (QTextStream stream(*data); !stream.atEnd(); ) {
                 // TODO: handle binary data?
-                QAction *recent = 0;
-                QDir::setCurrent(fileInfo.dir().path());
                 ui->textEdit->setText(stream.readAll());
                 ui->textEdit->document()->setBaseUrl(QUrl::fromLocalFile(fileInfo.filePath()));
-                ui->textEdit->setWindowTitle(fileInfo.fileName() + QLatin1String("[*]"));
+                ui->textEdit->document()->setModified(false);
 
                 if (qryptic.crypticVersion()) {
                     ui->digestComboBox->setCurrentText(qryptic.keyMaker().algorithmName());
@@ -251,22 +255,6 @@ bool MainWindow::openFile(const QString &fileName)
                 if ((stream.status() == QTextStream::Ok) == ui->actionRead_Only_Mode->isChecked())
                     ui->actionRead_Only_Mode->trigger();
 
-                foreach (QAction *action, ui->menuOpen_Recent->actions()) {
-                    const QFileInfo actionInfo(action->toolTip());
-
-                    if (fileInfo == actionInfo)
-                        recent = action;
-                }
-
-                if (recent) {
-                    ui->menuOpen_Recent->removeAction(recent);
-                } else {
-                    recent = new QAction(fileInfo.fileName(), ui->menuOpen_Recent);
-                    recent->setToolTip(fileInfo.filePath());
-                    recent->setStatusTip(fileInfo.filePath());
-                }
-
-                ui->menuOpen_Recent->insertAction(ui->menuOpen_Recent->actions().at(0), recent);
                 return true; // the only early-exit in the loop
             }
         default:
@@ -372,21 +360,8 @@ bool MainWindow::saveFile(const QString &fileName)
             break;
         case QryptIO::Ok:
             if (saveFile.commit()) {
-                QAction *recent = 0;
-                QDir::setCurrent(fileInfo.dir().path());
                 ui->textEdit->document()->setBaseUrl(QUrl::fromLocalFile(fileInfo.filePath()));
                 ui->textEdit->document()->setModified(false);
-                ui->textEdit->setWindowTitle(fileInfo.fileName() + QLatin1String("[*]"));
-
-                if (recent) {
-                    ui->menuOpen_Recent->removeAction(recent);
-                } else {
-                    recent = new QAction(fileInfo.fileName(), ui->menuOpen_Recent);
-                    recent->setToolTip(fileInfo.filePath());
-                    recent->setStatusTip(fileInfo.filePath());
-                }
-
-                ui->menuOpen_Recent->insertAction(ui->menuOpen_Recent->actions().at(0), recent);
                 return true; // the only early-exit in the loop
             }
         default:
@@ -401,6 +376,54 @@ bool MainWindow::saveFile(const QString &fileName)
     }
 
     return false;
+}
+
+void MainWindow::textDocument_baseUrlChanged(const QUrl &url)
+{
+    const bool localUrl = url.isLocalFile();
+    const QString fileUrl = localUrl ? url.toLocalFile() : url.toDisplayString();
+    QAction *recentItem = 0;
+
+    foreach (QAction *ri, ui->menuOpen_Recent->actions()) {
+        if (!ri->statusTip().isEmpty() && ri->statusTip() == fileUrl)
+            recentItem = ri;
+    }
+
+    if (recentItem) {
+        ui->menuOpen_Recent->removeAction(recentItem);
+    } else {
+        recentItem = new QAction(url.fileName(), ui->menuOpen_Recent);
+        recentItem->setStatusTip(fileUrl);
+
+        for (QList<QAction*> actions = ui->menuOpen_Recent->actions();
+             actions.size() > 11; ) {
+            QAction *action = actions.takeAt(actions.size() - 3);
+            action->deleteLater();
+            ui->menuOpen_Recent->removeAction(action);
+        }
+    }
+
+    if (url.isLocalFile())
+        QDir::setCurrent(url.path());
+
+    ui->textEdit->setWindowTitle(url.fileName() + QLatin1String("[*]"));
+    ui->menuOpen_Recent->insertAction(ui->menuOpen_Recent->actions().at(0), recentItem);
+
+    for (QSettings settings; settings.isWritable(); ) {
+        QList<QAction*> recentActions = ui->menuOpen_Recent->actions();
+        recentActions.removeLast();
+        recentActions.removeLast();
+        settings.beginWriteArray("Recent Files", recentActions.size());
+
+        for (int i = 0; i < recentActions.size(); ++i) {
+            settings.setArrayIndex(i);
+            settings.setValue("Title", recentActions.at(i)->iconText());
+            settings.setValue("URL", recentActions.at(i)->statusTip());
+        }
+
+        settings.endArray();
+        break;
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -425,15 +448,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
     settings.setValue("Geometry", saveGeometry());
     settings.setValue("State", saveState());
     settings.endGroup();
-    settings.beginWriteArray("Recent Files", recent.size() - 2);
-
-    for (int i = recent.size() - 2; i-- > 0; ) {
-        settings.setArrayIndex(recent.size() - i);
-        settings.setValue("Title", recent.at(i)->text());
-        settings.setValue("Url", recent.at(i)->toolTip());
-    }
-
-    settings.endArray();
     QMainWindow::closeEvent(event);
 }
 
@@ -450,13 +464,12 @@ void MainWindow::showEvent(QShowEvent *event)
         restoreState(settings.value("State").toByteArray());
         settings.endGroup();
 
-        for (int i = settings.beginReadArray("Recent Files"); i-- > 0 && recent.size() < 10; ) {
+        for (int i = 0, l = qMin(settings.beginReadArray("Recent Files"), 10); i < l ; ++i) {
             settings.setArrayIndex(i);
             QAction *action = new QAction(settings.value("Title").toString(), ui->menuOpen_Recent);
-            action->setToolTip(settings.value("Url").toString());
-            action->setStatusTip(action->toolTip());
+            action->setStatusTip(settings.value("URL").toString());
 
-            if (action->text().isEmpty() || action->toolTip().isEmpty())
+            if (action->text().isEmpty() || action->statusTip().isEmpty())
                 action->deleteLater();
             else
                 recent.append(action);
@@ -634,13 +647,7 @@ void MainWindow::on_actionSwitch_Application_Language_triggered()
         QLocale::setDefault(lc);
         ui->retranslateUi(this);
         m_editMenu->deleteLater();
-        m_editMenu = ui->textEdit->createStandardContextMenu();
-
-        for (QList<QAction*> editActions = m_editMenu->actions(); !editActions.isEmpty(); editActions.clear()) {
-            editActions.last()->setIcon(QIcon::fromTheme(QLatin1String("edit-select-all")));
-            ui->menuEdit->insertActions(ui->menuEdit->actions().at(0), editActions);
-            ui->mainToolBar->addActions(editActions.mid(0, editActions.size() - 3));
-        }
+        loadEditMenu();
     }
 }
 
@@ -670,6 +677,22 @@ void MainWindow::on_actionWord_Wrap_triggered(bool checked)
 void MainWindow::on_fontSpinBox_valueChanged(int value)
 {
     ui->textEdit->setFontPointSize(value);
+}
+
+void MainWindow::on_menuOpen_Recent_triggered(QAction *action)
+{
+    if (action == ui->actionClear_List) {
+        QSettings settings;
+        settings.beginWriteArray("Recent Files", 0);
+        settings.endArray();
+
+        foreach (QAction *recentItem, ui->menuOpen_Recent->actions()) {
+            if (recentItem != action && !recentItem->statusTip().isEmpty())
+                recentItem->deleteLater();
+        }
+    } else {
+        openFile(action->statusTip());
+    }
 }
 
 void MainWindow::on_textEdit_currentCharFormatChanged(const QTextCharFormat &format)

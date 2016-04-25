@@ -4,6 +4,7 @@
 #include <QMainWindow>
 
 class QFileDevice;
+class QFileInfo;
 class QTextCharFormat;
 class QTranslator;
 
@@ -17,6 +18,7 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    Ui::MainWindow *ui;
     QMenu *m_editMenu;
 
 public:
@@ -30,9 +32,14 @@ public:
 
     QString getErrorString(const QryptIO &qryptic) const;
 
+    void loadEditMenu();
+
     bool openFile(const QString &fileName);
 
     bool saveFile(const QString &fileName);
+
+public slots:
+    void textDocument_baseUrlChanged(const QUrl &url);
 
 protected:
     void closeEvent(QCloseEvent *event);
@@ -84,14 +91,13 @@ private slots:
 
     void on_fontSpinBox_valueChanged(int value);
 
+    void on_menuOpen_Recent_triggered(QAction *action);
+
     void on_textEdit_currentCharFormatChanged(const QTextCharFormat &format);
 
     void on_textEdit_cursorPositionChanged();
 
     void on_textEdit_windowTitleChanged();
-
-private:
-    Ui::MainWindow *ui;
 };
 
 #endif // MAINWINDOW_H
