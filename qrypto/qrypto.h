@@ -13,6 +13,7 @@
 #define QRYPTO_QRYPTO_H
 
 #include <QStringList>
+#include <vector>
 
 namespace Qrypto
 {
