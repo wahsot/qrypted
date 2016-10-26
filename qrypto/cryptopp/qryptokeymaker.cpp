@@ -108,10 +108,10 @@ const QStringList KeyMaker::AlgorithmNames =
                          CryptoPP::SHA256::StaticAlgorithmName() <<
                          CryptoPP::SHA384::StaticAlgorithmName() <<
                          CryptoPP::SHA512::StaticAlgorithmName() <<
-                         CryptoPP::SHA3_224::StaticAlgorithmName() <<
-                         CryptoPP::SHA3_256::StaticAlgorithmName() <<
-                         CryptoPP::SHA3_384::StaticAlgorithmName() <<
-                         CryptoPP::SHA3_512::StaticAlgorithmName() <<
+                         QString::fromStdString(CryptoPP::SHA3_224::StaticAlgorithmName()) <<
+                         QString::fromStdString(CryptoPP::SHA3_256::StaticAlgorithmName()) <<
+                         QString::fromStdString(CryptoPP::SHA3_384::StaticAlgorithmName()) <<
+                         QString::fromStdString(CryptoPP::SHA3_512::StaticAlgorithmName()) <<
                          CryptoPP::Tiger::StaticAlgorithmName() <<
                          CryptoPP::Whirlpool::StaticAlgorithmName() <<
                          QString();
