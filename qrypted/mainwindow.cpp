@@ -429,20 +429,23 @@ void MainWindow::textDocument_baseUrlChanged(const QUrl &url)
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     if (ui->textEdit->document()->isModified()) {
-        if (QMessageBox::warning(this, trUtf8("Close — %1").arg(qApp->applicationName()),
-                                 tr("The document %1 has been modified.\nDo you want to save your changes or discard them?")
-                                 .arg(locale().quoteString(ui->textEdit->windowTitle())),
-                                 QMessageBox::Save | QMessageBox::Discard) != QMessageBox::Discard) {
+        switch (QMessageBox::warning(this, trUtf8("Close — %1").arg(qApp->applicationName()),
+                                     tr("The document %1 has been modified.\nDo you want to save your changes or discard them?")
+                                     .arg(locale().quoteString(ui->textEdit->windowTitle())),
+                                     QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel)) {
+        case QMessageBox::Save:
             on_actionSave_triggered();
+        case QMessageBox::Cancel:
             event->ignore();
             return;
+        default:
+            break;
         }
     }
 
     if (ui->actionFind->isChecked())
         ui->actionFind->trigger();
 
-    const QList<QAction*> recent = ui->menuOpen_Recent->actions();
     QSettings settings;
     settings.beginGroup("MainWindow");
     settings.setValue("Geometry", saveGeometry());
