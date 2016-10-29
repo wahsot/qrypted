@@ -1,6 +1,7 @@
 #include "sequre.h"
 
 #include <QString>
+#include <vector>
 
 namespace Qrypto
 {
