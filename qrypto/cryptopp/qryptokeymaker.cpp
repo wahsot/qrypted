@@ -72,12 +72,12 @@ struct KeyMaker::Impl
                 CryptoPP::AutoSeededRandomPool prng;
 
                 for (int zeroes = q->m_salt.size(), half = zeroes / 2; zeroes > half; zeroes = q->m_salt.count('\0'))
-                    prng.GenerateBlock(reinterpret_cast<byte*>(q->m_salt.data()), q->m_salt.size());
+                    prng.GenerateBlock(reinterpret_cast<CryptoPP::byte*>(q->m_salt.data()), q->m_salt.size());
             }
 
             q->m_iteration = PBKDF.DeriveKey(q->m_key->data(), q->m_key->size(), 0,
-                                             reinterpret_cast<const byte*>(pwData), pwSize,
-                                             reinterpret_cast<const byte*>(q->m_salt.constData()), q->m_salt.size(),
+                                             reinterpret_cast<const CryptoPP::byte*>(pwData), pwSize,
+                                             reinterpret_cast<const CryptoPP::byte*>(q->m_salt.constData()), q->m_salt.size(),
                                              q->m_iteration, q->m_iterationTime / 1000.0);
 
             return NoError;
@@ -123,12 +123,12 @@ QByteArray KeyMaker::authenticate(const char *messageData, uint messageSize, uin
 
     if (HMAC) {
         if (0 < truncatedSize && truncatedSize < HMAC->DigestSize())
-            HMAC->CalculateTruncatedDigest(reinterpret_cast<byte*>(code.fill(0, truncatedSize).data()),
-                                           truncatedSize, reinterpret_cast<const byte*>(messageData),
+            HMAC->CalculateTruncatedDigest(reinterpret_cast<CryptoPP::byte*>(code.fill(0, truncatedSize).data()),
+                                           truncatedSize, reinterpret_cast<const CryptoPP::byte*>(messageData),
                                            messageSize);
         else
-            HMAC->CalculateDigest(reinterpret_cast<byte*>(code.fill(0, HMAC->DigestSize()).data()),
-                                  reinterpret_cast<const byte*>(messageData), messageSize);
+            HMAC->CalculateDigest(reinterpret_cast<CryptoPP::byte*>(code.fill(0, HMAC->DigestSize()).data()),
+                                  reinterpret_cast<const CryptoPP::byte*>(messageData), messageSize);
     }
 
     return code;

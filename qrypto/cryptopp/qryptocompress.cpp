@@ -48,7 +48,7 @@ Error Compress::deflate(SequreBytes &deflated, const QByteArray &data, int defla
     try {
         deflated.reserve(data.size());
         deflated.resize(0);
-        CryptoPP::StringSource(reinterpret_cast<const byte*>(data.constData()), data.size(),
+        CryptoPP::StringSource(reinterpret_cast<const CryptoPP::byte*>(data.constData()), data.size(),
                                true, deflator.take());
         return NoError;
     } catch (const std::bad_alloc &exc) {
@@ -83,7 +83,7 @@ Error Compress::inflate(SequreBytes &inflated, const QByteArray &data, bool repe
     try {
         inflated.reserve(data.size());
         inflated.resize(0);
-        CryptoPP::StringSource(reinterpret_cast<const byte*>(data.constData()), data.size(),
+        CryptoPP::StringSource(reinterpret_cast<const CryptoPP::byte*>(data.constData()), data.size(),
                                true, inflator.take());
         return NoError;
     } catch (const std::bad_alloc &exc) {
