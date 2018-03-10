@@ -257,6 +257,7 @@ bool MainWindow::openFile(const QString &fileName)
 
                 return true; // the only early-exit in the loop
             }
+            /* FALLTHRU */
         default:
             errorString = getErrorString(qryptic);
             errorString[0] = errorString.at(0).toUpper();
@@ -364,6 +365,7 @@ bool MainWindow::saveFile(const QString &fileName)
                 ui->textEdit->document()->setModified(false);
                 return true; // the only early-exit in the loop
             }
+            /* FALLTHRU */
         default:
             // file error
             errorString = getErrorString(saveFile);
@@ -435,6 +437,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
                                      QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel)) {
         case QMessageBox::Save:
             on_actionSave_triggered();
+            /* FALLTHRU */
         case QMessageBox::Cancel:
             event->ignore();
             return;

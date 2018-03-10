@@ -78,6 +78,7 @@ struct QryptIO::Private
                 }
 
                 ++from;
+                /* FALLTHRU */
             case QXmlStreamReader::EndElement:
                 path = path.section('/', 0, -2);
                 break;
@@ -129,6 +130,7 @@ struct QryptIO::Private
                 }
 
                 ++from;
+                /* FALLTHRU */
             case QXmlStreamReader::EndElement:
                 path = path.section('/', 0, -2);
                 break;
