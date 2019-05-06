@@ -33,6 +33,7 @@ public:
     typedef Sequre<Str, Len, Chr> Cls;
     typedef Len  size_type;
     typedef Chr  value_type;
+    typedef typename Str::iterator iterator;
 
     Sequre(Str *str = 0) :
         s(str ? str : new Str)
@@ -94,6 +95,12 @@ public:
         return *this;
     }
 
+    iterator begin()
+    { return s->begin(); }
+
+    iterator end()
+    { return s->end(); }
+
     Cls &clear()
     {
         for (Len size = fill(0, s->capacity())->size(); size && s->at(size / 2) == Chr(0); size = 0)
@@ -111,13 +118,13 @@ public:
         return *this;
     }
 
-    Cls &insert(Len pos, Chr ch)
+    iterator insert(Len pos, Chr ch)
     { return insert(pos, &ch, 1); }
 
-    Cls &insert(Len pos, const Str &str)
+    iterator insert(Len pos, const Str &str)
     { return insert(pos, str.data(), str.size()); }
 
-    Cls &insert(Len pos, const Chr *str, Len size)
+    iterator insert(Len pos, const Chr *str, Len size)
     {
         if (str && size > 0) {
             resize(s->size() + size);
@@ -125,7 +132,7 @@ public:
                       std::copy_backward(s->begin() + pos, s->begin() + (pos + size), s->end()));
         }
 
-        return *this;
+        return begin() + (pos + size);
     }
 
     Cls &prepend(Chr ch)
@@ -180,7 +187,9 @@ public:
     template <class InputIterator>
     Cls &append(InputIterator first, InputIterator last)
     {
-        for (Len size = last - first; size; size = 0)
+        const int size = last - first;
+
+        if (size > 0)
             std::copy(first, last, resize(s->size() + size)->end() - size);
 
         return *this;
@@ -188,6 +197,16 @@ public:
 
     Len capacity() const
     { return s->capacity(); }
+
+    iterator insert(iterator it, const Chr *first, const Chr *last)
+    {
+        const Len pos = it - begin();
+
+        if (size() == pos)
+            return append(first, last).end();
+        else
+            return insert(pos, first, last - first);
+    }
 
     Len size() const
     { return s->size(); }
