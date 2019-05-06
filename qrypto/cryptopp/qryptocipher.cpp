@@ -182,8 +182,6 @@ Error Cipher::decrypt(SequreBytes &plain, const QByteArray &crypt, const KeyMake
 {
     QScopedPointer<CryptoPP::Algorithm> cipher;
     Impl f(this);
-    QByteArray ba;
-    ba.detach();
 
     switch (algorithm()) {
     case AES:
