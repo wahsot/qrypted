@@ -84,7 +84,7 @@ struct KeyMaker::Impl
         } catch (const std::bad_alloc &exc) {
             return OutOfMemory;
         } catch (const CryptoPP::Exception &exc) {
-            qCritical(exc.what());
+            qCritical("%s", exc.what());
 
             switch (exc.GetErrorType()) {
             case CryptoPP::Exception::INVALID_ARGUMENT:

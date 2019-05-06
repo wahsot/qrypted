@@ -54,7 +54,7 @@ Error Compress::deflate(SequreBytes &deflated, const QByteArray &data, int defla
     } catch (const std::bad_alloc &exc) {
         return OutOfMemory;
     } catch (const std::exception &exc) {
-        qCritical(exc.what());
+        qCritical("%s", exc.what());
         return UnknownError;
     }
 }
@@ -95,11 +95,11 @@ Error Compress::inflate(SequreBytes &inflated, const QByteArray &data, bool repe
         case CryptoPP::Exception::DATA_INTEGRITY_CHECK_FAILED:
             return IntegrityError;
         default:
-            qCritical(exc.what());
+            qCritical("%s", exc.what());
             return UnknownError;
         }
     } catch (const std::exception &exc) {
-        qCritical(exc.what());
+        qCritical("%s", exc.what());
         return UnknownError;
     }
 }

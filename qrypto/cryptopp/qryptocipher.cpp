@@ -182,6 +182,8 @@ Error Cipher::decrypt(SequreBytes &plain, const QByteArray &crypt, const KeyMake
 {
     QScopedPointer<CryptoPP::Algorithm> cipher;
     Impl f(this);
+    QByteArray ba;
+    ba.detach();
 
     switch (algorithm()) {
     case AES:
@@ -223,7 +225,7 @@ Error Cipher::decrypt(SequreBytes &plain, const QByteArray &crypt, const KeyMake
     } catch (const std::bad_alloc &exc) {
         return OutOfMemory;
     } catch (const CryptoPP::Exception &exc) {
-        qCritical(exc.what());
+        qCritical("%s", exc.what());
 
         switch (exc.GetErrorType()) {
         case CryptoPP::Exception::NOT_IMPLEMENTED:
@@ -285,7 +287,7 @@ Error Cipher::encrypt(QByteArray &crypt, const SequreBytes &plain, const KeyMake
     } catch (const std::bad_alloc &exc) {
         return OutOfMemory;
     } catch (const CryptoPP::Exception &exc) {
-        qCritical(exc.what());
+        qCritical("%s", exc.what());
 
         switch (exc.GetErrorType()) {
         case CryptoPP::Exception::NOT_IMPLEMENTED:
