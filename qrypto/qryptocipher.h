@@ -1,4 +1,4 @@
-/* Qrypto 2016
+/* Qrypto 2019
 **
 ** GNU Lesser General Public License Usage
 ** This file may be used under the terms of the GNU Lesser

@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     a.setApplicationName("Qrypted");
-    a.setApplicationVersion("2016.0425");
+    a.setApplicationVersion("2019.0508");
     a.setOrganizationDomain("qrypted.org");
     a.setOrganizationName("Qrypted");
     QDir::addSearchPath("tr", a.applicationDirPath() + QLatin1String("/../share/translations"));
